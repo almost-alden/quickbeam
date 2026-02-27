@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quickbeam Magic Link</title>
+    <style>
+        body { font-family: -apple-system, sans-serif; text-align: center; padding: 2rem; }
+        .btn { padding: 1rem 2rem; font-size: 1.2rem; background: #673ab7; color: white; border: none; border-radius: 8px; cursor: pointer; }
+        #status { margin: 2rem 0; color: #666; }
+    </style>
+</head>
+<body>
+    <h1 id="sender-msg">Someone wants to show you something!</h1>
+    <div id="content-info">Loading video details...</div>
+    
+    <div id="status">Finding your Roku TV...</div>
+    
+    <div id="action-area" style="display:none;">
+        <button class="btn" onclick="launchVideo()">🚀 Play on TV</button>
+    </div>
+
+    <script>
+        const linkId = window.location.pathname.split('/').pop();
+        let targetDevice = null;
+        let linkData = null;
+
+        async function resolveLink() {
+            try {
+                const res = await fetch(`/api/resolve/${linkId}`);
+                linkData = await res.json();
+                
+                document.getElementById('sender-msg').innerText = `${linkData.senderName || 'Someone'} wants to show you a video!`;
+                document.getElementById('content-info').innerText = `Ready to play ${linkData.appId === '837' ? 'YouTube' : 'Netflix/Prime'} content.`;
+
+                if (linkData.device) {
+                    targetDevice = linkData.device;
+                    document.getElementById('status').innerText = "Found your TV! Ready to play.";
+                    document.getElementById('action-area').style.display = 'block';
+                } else {
+                    document.getElementById('status').innerText = "Can't find your TV. Please make sure the Quickbeam app is open on your Roku.";
+                }
+            } catch (e) {
+                document.getElementById('status').innerText = "Error resolving link.";
+            }
+        }
+
+        async function launchVideo() {
+            if (!targetDevice || !linkData) return;
+            
+            const rokuUrl = `http://${targetDevice.localIp}:8060/launch/${linkData.appId}?contentId=${linkData.contentId}&mediaType=${linkData.mediaType}`;
+            
+            document.getElementById('status').innerText = "Sending to TV...";
+            
+            try {
+                // Note: This will likely trigger a CORS warning in the console but should work as a "no-cors" POST
+                await fetch(rokuUrl, { method: 'POST', mode: 'no-cors' });
+                document.getElementById('status').innerText = "Launched! Check your TV.";
+            } catch (e) {
+                document.getElementById('status').innerText = "Failed to talk to Roku. Are you on the same Wi-Fi?";
+            }
+        }
+
+        resolveLink();
+    </script>
+</body>
+</html>
