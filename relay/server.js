@@ -36,7 +36,11 @@ app.post('/api/create', (req, res) => {
 
     const linkId = uuidv4().substring(0, 8);
     magicLinks.set(linkId, { ...parsed, senderName, originalUrl: url, createdAt: Date.now() });
-    res.json({ linkId, relayUrl: `http://localhost:${PORT}/magic/${linkId}` });
+    
+    // Dynamically build the relayUrl using the current host
+    const protocol = req.protocol;
+    const host = req.get('host');
+    res.json({ linkId, relayUrl: `${protocol}://${host}/magic/${linkId}` });
 });
 
 // 3. Resolve Magic Link (from Recipient)
