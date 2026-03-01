@@ -23,6 +23,10 @@
     <div class="card">
         <h1>Quickbeam ⚡️</h1>
         <p>Send a video to a friend's Roku instantly.</p>
+
+        <div id="roku-status" style="margin-bottom: 2rem; padding: 0.8rem; border-radius: 8px; font-size: 0.8rem; border: 1px solid #eee;">
+            Checking Roku status...
+        </div>
         
         <label>Your Name</label>
         <input type="text" id="senderName" placeholder="e.g. Johnny">
@@ -39,7 +43,27 @@
         </div>
     </div>
 
-    <script>
+        async function checkStatus() {
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
+                const statusEl = document.getElementById('roku-status');
+                if (data.active) {
+                    statusEl.innerText = "✅ A Roku TV is active on your network!";
+                    statusEl.style.background = "#e8f5e9";
+                    statusEl.style.borderColor = "#c8e6c9";
+                    statusEl.style.color = "#2e7d32";
+                } else {
+                    statusEl.innerText = "🏠 No Roku found on this network (IP: " + data.publicIp + ")";
+                    statusEl.style.background = "#fff3e0";
+                    statusEl.style.borderColor = "#ffe0b2";
+                    statusEl.style.color = "#ef6c00";
+                }
+            } catch (e) {
+                document.getElementById('roku-status').innerText = "Unable to check Roku status.";
+            }
+        }
+
         async function generateLink() {
             const senderName = document.getElementById('senderName').value;
             const url = document.getElementById('videoUrl').value;
@@ -64,6 +88,9 @@
                 alert("Failed to connect to Relay server.");
             }
         }
+
+        checkStatus();
+        setInterval(checkStatus, 10000);
     </script>
 </body>
 </html>

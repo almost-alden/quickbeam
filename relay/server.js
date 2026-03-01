@@ -25,6 +25,17 @@ app.post('/api/register', (req, res) => {
     res.json({ status: 'ok', matchIp: publicIp });
 });
 
+// Check if a Roku is active on the sender's current public IP
+app.get('/api/status', (req, res) => {
+    const publicIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const device = findDeviceByPublicIp(publicIp);
+    res.json({ 
+        active: !!device, 
+        lastSeen: device ? device.lastSeen : null,
+        publicIp 
+    });
+});
+
 // 2. Create Magic Link (from Sender)
 app.post('/api/create', (req, res) => {
     const { url, senderName } = req.body;

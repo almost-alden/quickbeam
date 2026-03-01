@@ -3,21 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quickbeam Magic Link</title>
+    <title>Quickbeam | Welcome!</title>
     <style>
-        body { font-family: -apple-system, sans-serif; text-align: center; padding: 2rem; }
-        .btn { padding: 1rem 2rem; font-size: 1.2rem; background: #673ab7; color: white; border: none; border-radius: 8px; cursor: pointer; }
-        #status { margin: 2rem 0; color: #666; }
+        :root { --primary: #673ab7; --bg: #f5f5f7; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 1.5rem; text-align: center; color: #1d1d1f; }
+        .container { max-width: 500px; margin: 0 auto; background: white; padding: 2rem; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        .avatar { width: 80px; height: 80px; background: #eee; border-radius: 50%; margin: 0 auto 1.5rem; display: flex; align-items: center; justify-content: center; font-size: 2rem; border: 4px solid var(--primary); }
+        h1 { font-size: 1.5rem; margin-bottom: 0.5rem; }
+        .message { font-size: 1.1rem; line-height: 1.4; color: #444; margin-bottom: 2rem; }
+        .video-box { background: #f9f9f9; padding: 1rem; border-radius: 12px; margin-bottom: 2rem; border-left: 5px solid var(--primary); text-align: left; }
+        .video-label { font-size: 0.7rem; color: #888; text-transform: uppercase; font-weight: bold; }
+        .video-title { font-weight: 600; color: #333; }
+        .btn { padding: 1.2rem 2.5rem; font-size: 1.2rem; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; transition: transform 0.2s, background 0.2s; width: 100%; box-shadow: 0 4px 15px rgba(103, 58, 183, 0.3); }
+        .btn:active { transform: scale(0.98); }
+        .status { margin-top: 2rem; font-size: 0.85rem; padding: 0.8rem; border-radius: 8px; }
+        .status.finding { background: #fffde7; color: #f57f17; }
+        .status.paired { background: #e8f5e9; color: #2e7d32; font-weight: bold; }
+        .status.error { background: #ffebee; color: #c62828; }
+        .help-box { margin-top: 3rem; font-size: 0.8rem; color: #999; border-top: 1px solid #eee; padding-top: 1.5rem; }
     </style>
 </head>
 <body>
-    <h1 id="sender-msg">Someone wants to show you something!</h1>
-    <div id="content-info">Loading video details...</div>
-    
-    <div id="status">Finding your Roku TV...</div>
-    
-    <div id="action-area" style="display:none;">
-        <button class="btn" onclick="launchVideo()">🚀 Play on TV</button>
+    <div class="container">
+        <div class="avatar">💌</div>
+        <h1 id="sender-msg">A message for you!</h1>
+        <div class="message" id="instruction">Johnny wants to show you a video on your TV.</div>
+        
+        <div class="video-box">
+            <div class="video-label">The Selection</div>
+            <div class="video-title" id="content-info">Ready to play...</div>
+        </div>
+
+        <div id="status-box" class="status finding">🔍 Finding your TV...</div>
+
+        <div id="action-area" style="display:none; margin-top: 2rem;">
+            <button class="btn" onclick="launchVideo()">📺 Tap to Play on TV</button>
+            <p style="font-size: 0.8rem; color: #666; margin-top: 1rem;">Make sure your TV is turned on!</p>
+        </div>
+
+        <div class="help-box">
+            <b>Need help?</b><br>
+            If the TV doesn't find the video, try opening the "Quickbeam" app on your Roku TV first.
+        </div>
     </div>
 
     <script>
@@ -30,18 +57,22 @@
                 const res = await fetch(`/api/resolve/${linkId}`);
                 linkData = await res.json();
                 
-                document.getElementById('sender-msg').innerText = `${linkData.senderName || 'Someone'} wants to show you a video!`;
-                document.getElementById('content-info').innerText = `Ready to play ${linkData.appId === '837' ? 'YouTube' : 'Netflix/Prime'} content.`;
+                document.getElementById('sender-msg').innerText = `${linkData.senderName || 'Someone'} sent you a video!`;
+                document.getElementById('instruction').innerText = `${linkData.senderName || 'Your friend'} wants to show you this on your TV.`;
+                document.getElementById('content-info').innerText = linkData.appId === '837' ? 'A YouTube Video' : 'A Special Selection';
 
                 if (linkData.device) {
                     targetDevice = linkData.device;
-                    document.getElementById('status').innerText = "Found your TV! Ready to play.";
+                    document.getElementById('status-box').innerText = "✅ TV Found & Connected";
+                    document.getElementById('status-box').className = "status paired";
                     document.getElementById('action-area').style.display = 'block';
                 } else {
-                    document.getElementById('status').innerText = "Can't find your TV. Please make sure the Quickbeam app is open on your Roku.";
+                    document.getElementById('status-box').innerText = "❌ TV Not Found. Open Quickbeam on Roku.";
+                    document.getElementById('status-box').className = "status error";
                 }
             } catch (e) {
-                document.getElementById('status').innerText = "Error resolving link.";
+                document.getElementById('status-box').innerText = "⚠️ Link error. Try again.";
+                document.getElementById('status-box').className = "status error";
             }
         }
 
@@ -50,14 +81,18 @@
             
             const rokuUrl = `http://${targetDevice.localIp}:8060/launch/${linkData.appId}?contentId=${linkData.contentId}&mediaType=${linkData.mediaType}`;
             
-            document.getElementById('status').innerText = "Sending to TV...";
+            const originalText = document.querySelector('.btn').innerText;
+            document.querySelector('.btn').innerText = "✨ Starting...";
             
             try {
-                // Note: This will likely trigger a CORS warning in the console but should work as a "no-cors" POST
                 await fetch(rokuUrl, { method: 'POST', mode: 'no-cors' });
-                document.getElementById('status').innerText = "Launched! Check your TV.";
+                setTimeout(() => {
+                    document.querySelector('.btn').innerText = "🎬 Playing on TV!";
+                    setTimeout(() => { document.querySelector('.btn').innerText = originalText; }, 3000);
+                }, 1000);
             } catch (e) {
-                document.getElementById('status').innerText = "Failed to talk to Roku. Are you on the same Wi-Fi?";
+                alert("Failed to reach TV. Check your Wi-Fi.");
+                document.querySelector('.btn').innerText = originalText;
             }
         }
 
