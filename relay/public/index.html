@@ -4,19 +4,320 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quickbeam | Sender Dashboard</title>
+    <!-- Modern typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
     <style>
-        :root { --primary: #673ab7; --bg: #f5f5f7; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); display: flex; justify-content: center; padding: 2rem; }
-        .card { background: white; padding: 2rem; border-radius: 16px; shadow: 0 4px 20px rgba(0,0,0,0.08); width: 100%; max-width: 400px; }
-        h1 { font-size: 1.5rem; margin-bottom: 0.5rem; color: var(--primary); }
-        p { color: #666; font-size: 0.9rem; margin-bottom: 2rem; }
-        label { display: block; font-weight: 600; margin-bottom: 0.5rem; font-size: 0.8rem; text-transform: uppercase; color: #888; }
-        input { width: 100%; padding: 0.8rem; margin-bottom: 1.5rem; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        button { width: 100%; padding: 1rem; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
-        button:hover { opacity: 0.9; }
-        #result { margin-top: 2rem; display: none; padding: 1rem; background: #e8f5e9; border-radius: 8px; border: 1px solid #c8e6c9; }
-        .link-text { font-family: monospace; word-break: break-all; color: #2e7d32; font-size: 0.9rem; }
-        .copy-hint { font-size: 0.7rem; color: #666; margin-top: 0.5rem; }
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: rgba(20, 26, 45, 0.6);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --primary: #8b5cf6;
+            --primary-hover: #7c3aed;
+            --primary-glow: rgba(139, 92, 246, 0.3);
+            
+            --success: #10b981;
+            --success-bg: rgba(16, 185, 129, 0.1);
+            --success-border: rgba(16, 185, 129, 0.2);
+            --success-text: #34d399;
+            
+            --warning: #f59e0b;
+            --warning-bg: rgba(245, 158, 11, 0.1);
+            --warning-border: rgba(245, 158, 11, 0.2);
+            --warning-text: #fbbf24;
+            
+            --error: #ef4444;
+            --error-bg: rgba(239, 68, 68, 0.1);
+            --error-border: rgba(239, 68, 68, 0.2);
+            --error-text: #f87171;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.15) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: var(--text-primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 1.5rem;
+            box-sizing: border-box;
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--card-border);
+            padding: 2.5rem;
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 440px;
+            box-sizing: border-box;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Subtle glowing card accent */
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #6366f1, #8b5cf6, #ec4899);
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0 0 0.5rem;
+            letter-spacing: -0.025em;
+            background: linear-gradient(to right, #a5b4fc, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin: 0 0 2rem;
+            font-weight: 300;
+        }
+
+        .status-badge {
+            margin-bottom: 2rem;
+            padding: 1rem;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+            text-align: left;
+            line-height: 1.4;
+            word-break: break-word;
+        }
+
+        .status-badge.loading {
+            background: rgba(255, 255, 255, 0.03);
+            border-color: rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+        }
+
+        .status-badge.connected {
+            background: var(--success-bg);
+            border-color: var(--success-border);
+            color: var(--success-text);
+        }
+
+        .status-badge.disconnected {
+            background: var(--warning-bg);
+            border-color: var(--warning-border);
+            color: var(--warning-text);
+        }
+
+        .status-badge.error {
+            background: var(--error-bg);
+            border-color: var(--error-border);
+            color: var(--error-text);
+        }
+
+        /* Ping pulse animation for connection status */
+        .ping-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            position: relative;
+            flex-shrink: 0;
+            margin-top: 0.35rem;
+        }
+        
+        .connected .ping-indicator { background-color: var(--success); }
+        .disconnected .ping-indicator { background-color: var(--warning); }
+        .loading .ping-indicator { background-color: var(--text-secondary); }
+
+        .connected .ping-indicator::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--success);
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.7; }
+            100% { transform: scale(2.5); opacity: 0; }
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.6rem;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+        }
+
+        .input-group {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+
+        input {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            font-family: inherit;
+            box-sizing: border-box;
+            transition: all 0.2s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.25);
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 1.1rem;
+            background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 12px var(--primary-glow);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(139, 92, 246, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(1px);
+        }
+
+        #result {
+            margin-top: 2rem;
+            display: none;
+            padding: 1.25rem;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .link-container {
+            display: flex;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 0.5rem 0.5rem 0.5rem 1rem;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .link-text {
+            font-family: 'JetBrains Mono', monospace;
+            word-break: break-all;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            flex-grow: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .copy-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: var(--text-primary);
+            border-radius: 8px;
+            padding: 0.6rem 1rem;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            flex-shrink: 0;
+        }
+
+        .copy-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .copy-btn:active {
+            transform: scale(0.95);
+        }
+
+        .copy-btn.copied {
+            background: var(--success-bg);
+            border-color: var(--success-border);
+            color: var(--success-text);
+        }
+
+        .copy-btn svg {
+            transition: transform 0.2s ease;
+        }
+
+        .copy-btn.copied svg {
+            transform: scale(1.1);
+        }
+
+        .copy-hint {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -24,52 +325,76 @@
         <h1>Quickbeam ⚡️</h1>
         <p>Send a video to a friend's Roku instantly.</p>
 
-        <div id="roku-status" style="margin-bottom: 2rem; padding: 0.8rem; border-radius: 8px; font-size: 0.8rem; border: 1px solid #eee;">
-            Checking Roku status...
+        <div id="roku-status" class="status-badge loading">
+            <span class="ping-indicator"></span>
+            <span>Checking Roku status...</span>
         </div>
         
-        <label>Your Name</label>
-        <input type="text" id="senderName" placeholder="e.g. Johnny">
+        <label for="senderName">Your Name</label>
+        <div class="input-group">
+            <input type="text" id="senderName" placeholder="e.g. Johnny">
+        </div>
 
-        <label>Video URL</label>
-        <input type="text" id="videoUrl" placeholder="Paste YouTube, Netflix, or Prime link">
+        <label for="videoUrl">Video URL</label>
+        <div class="input-group">
+            <input type="text" id="videoUrl" placeholder="Paste YouTube, Netflix, or Prime link">
+        </div>
 
-        <button onclick="generateLink()">Create Magic Link</button>
+        <button class="btn-primary" onclick="generateLink()">
+            <span>Create Magic Link</span>
+            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+        </button>
 
         <div id="result">
             <label>Magic Link Ready!</label>
-            <div class="link-text" id="outputLink"></div>
+            <div class="link-container">
+                <span class="link-text" id="outputLink"></span>
+                <button class="copy-btn" id="copyBtn" onclick="copyLink()">
+                    <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round" id="copyIcon"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    <span>Copy</span>
+                </button>
+            </div>
             <div class="copy-hint">Copy this link and text it to your friend.</div>
         </div>
     </div>
 
     <script>
+        // Load saved sender name on startup
+        document.getElementById('senderName').value = localStorage.getItem('quickbeam_sender_name') || '';
+
         async function checkStatus() {
             try {
                 const res = await fetch('/api/status');
                 const data = await res.json();
                 const statusEl = document.getElementById('roku-status');
+                const textEl = statusEl.querySelector('span:not(.ping-indicator)');
+                
                 if (data.active) {
-                    statusEl.innerText = "✅ A Roku TV is active on your network!";
-                    statusEl.style.background = "#e8f5e9";
-                    statusEl.style.borderColor = "#c8e6c9";
-                    statusEl.style.color = "#2e7d32";
+                    statusEl.className = "status-badge connected";
+                    textEl.innerText = "A Roku TV is active on your network!";
                 } else {
-                    statusEl.innerText = "🏠 No Roku found on this network (IP: " + data.publicIp + ")";
-                    statusEl.style.background = "#fff3e0";
-                    statusEl.style.borderColor = "#ffe0b2";
-                    statusEl.style.color = "#ef6c00";
+                    statusEl.className = "status-badge disconnected";
+                    textEl.innerText = "No Roku TV detected on your network. (Your detected public IP: " + data.publicIp + "). Recipient's phone must open the magic link on the same Wi-Fi to register their TV.";
                 }
             } catch (e) {
-                document.getElementById('roku-status').innerText = "Unable to check Roku status.";
+                const statusEl = document.getElementById('roku-status');
+                statusEl.className = "status-badge error";
+                statusEl.querySelector('span:not(.ping-indicator)').innerText = "Unable to check Roku status.";
             }
         }
 
         async function generateLink() {
-            const senderName = document.getElementById('senderName').value;
-            const url = document.getElementById('videoUrl').value;
+            const senderName = document.getElementById('senderName').value.trim();
+            const url = document.getElementById('videoUrl').value.trim();
             
             if (!url) return alert("Please paste a URL");
+
+            // Save sender name for future use
+            if (senderName) {
+                localStorage.setItem('quickbeam_sender_name', senderName);
+            } else {
+                localStorage.removeItem('quickbeam_sender_name');
+            }
 
             try {
                 const res = await fetch('/api/create', {
@@ -87,6 +412,31 @@
                 }
             } catch (e) {
                 alert("Failed to connect to Relay server.");
+            }
+        }
+
+        async function copyLink() {
+            const linkText = document.getElementById('outputLink').innerText;
+            try {
+                await navigator.clipboard.writeText(linkText);
+                const copyBtn = document.getElementById('copyBtn');
+                const btnSpan = copyBtn.querySelector('span');
+                const btnIcon = copyBtn.querySelector('svg');
+                
+                btnSpan.innerText = 'Copied!';
+                copyBtn.classList.add('copied');
+                
+                // Switch to checkmark icon
+                btnIcon.innerHTML = '<polyline points="20 6 9 17 4 12"></polyline>';
+                
+                setTimeout(() => {
+                    btnSpan.innerText = 'Copy';
+                    copyBtn.classList.remove('copied');
+                    // Reset to copy icon
+                    btnIcon.innerHTML = '<rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>';
+                }, 2000);
+            } catch (e) {
+                alert("Failed to copy link: " + e);
             }
         }
 

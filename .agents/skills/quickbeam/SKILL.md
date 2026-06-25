@@ -34,29 +34,31 @@ graph TD
 *   [x] Initialize core relay server and IP-matching registry.
 *   [x] Implement dynamic magic link creation and URL resolution.
 *   [x] Build sender dashboard with status indicator.
-*   [ ] **Next Up**: Serve over plain HTTP to avoid browser Mixed Content blocks when communicating with local Roku ECP (HTTP).
-*   [ ] **Next Up**: Secure session validation and link expiration (TTL).
-*   [ ] **Next Up**: Robust device-matching for cases with multiple Rokus on one public IP.
+*   [x] Secure session validation and link expiration (TTL).
+*   [x] Enable HTTPS support by bypassing browser Mixed Content blocks (using hidden Form POST iframe wrappers in magic.html).
+*   [x] Robust device-matching for cases with multiple Rokus on one public IP (resolved via mobile device selector panel).
+*   [ ] **Next Up**: Deploy production environment container to Google Cloud Run and bind to `quickbeam.johnnylehane.com` via GoDaddy DNS.
 
 #### 📺 Track 2: Roku Receiver (BrightScript)
 *   [x] Create basic SceneGraph boilerplate.
-*   [x] Implement heartbeat registration to Relay (POST `/api/register`).
-*   [ ] **Next Up**: Implement 6-digit numeric pairing code generation and display on-screen as a fallback.
-*   [ ] **Next Up**: Generate a QR code containing the Roku's local IP address on the TV screen.
-*   [ ] **Next Up**: Display status interface showing connection state (e.g., "Ready for helper to cast").
+*   [x] Implement heartbeat registration to Relay.
+*   [x] **Archived/Bypassed**: We moved to the **Zero-Install ECP** model to completely bypass developer mode setup and dashboard deployment. Heartbeat auto-discovery is replaced by the browser Wi-Fi subnet scanner and manual IP entry saved to local storage.
 
 #### 🔗 Track 3: Deep Link Engine (JS)
-*   [x] Basic parsing of YouTube, Netflix, Prime Video, and EWTN.
-*   [ ] **Next Up**: Support for playlist IDs, timestamps, and search queries.
+*   [x] Robust parsing of YouTube (including mobile sharing and custom parameter ordering).
+*   [x] Parsing of Netflix (`/watch/` and `/title/` paths).
+*   [x] Parsing of Amazon Prime Video (`/detail/`, `/dp/`, and `/v/` paths).
+*   [x] Parsing of EWTN live streams.
+*   [ ] **Next Up**: Support for YouTube playlist IDs, timestamps, and search queries.
 *   [ ] **Next Up**: Add support for Disney+, Hulu, and Max.
 
 #### 📱 Track 4: Mobile Web Bridge (HTML/JS)
 *   [x] Resolve recipient magic link from Relay.
 *   [x] Attempt direct same-roof pairing via local IP.
-*   [ ] **Next Up**: Implement manual fallback input page supporting:
-    *   Entering the 6-digit pairing code shown on TV.
-    *   Scanning the QR code shown on TV.
-    *   Manual local IP input.
+*   [x] Implement manual fallback input page supporting manual local IP input.
+*   [x] Implement browser-based Wi-Fi network subnet auto-scanner (CORS-Time Hack).
+*   [x] Add dynamic multi-device selector to choose and switch between active TVs.
+*   [x] Implement hidden form submit wrapper to permit ECP casting fully over secure HTTPS.
 
 ---
 

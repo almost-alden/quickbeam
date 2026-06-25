@@ -74,7 +74,7 @@ function findDeviceByPairingCode(code) {
 }
 
 // Periodically clean up expired pairing codes
-setInterval(() => {
+const cleanupInterval = setInterval(() => {
     const now = Date.now();
     const ttl = 1000 * 60 * 60; // 1 hour TTL
     for (const [code, device] of pairingCodes.entries()) {
@@ -83,5 +83,9 @@ setInterval(() => {
         }
     }
 }, 10 * 60 * 1000); // Every 10 minutes
+
+if (typeof cleanupInterval.unref === 'function') {
+    cleanupInterval.unref();
+}
 
 module.exports = { registerDevice, getDevicesByPublicIp, findDeviceByPairingCode };

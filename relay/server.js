@@ -7,7 +7,15 @@ const { parseUrl } = require('./deeplink');
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
+app.use(express.static(__dirname + '/public'));
+
+function getClientIp(req) {
+    const forwarded = req.headers['x-forwarded-for'];
+    if (forwarded) {
+        return forwarded.split(',')[0].trim();
+    }
+    return req.socket.remoteAddress;
+}
 
 const PORT = process.env.PORT || 18000;
 const magicLinks = new Map(); // linkId -> { appId, contentId, mediaType, senderName, originalUrl, createdAt }
@@ -22,7 +30,7 @@ app.get('/magic/:linkId', (req, res) => {
 
 // 1. Device Registration (from Roku)
 app.post('/api/register', (req, res) => {
-    const publicIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const publicIp = getClientIp(req);
     const { localIp, deviceId, deviceName, pairingCode } = req.body;
     registerDevice(publicIp, localIp, deviceId, deviceName, pairingCode);
     res.json({ status: 'ok', matchIp: publicIp });
@@ -30,7 +38,7 @@ app.post('/api/register', (req, res) => {
 
 // Check if a Roku is active on the sender's current public IP
 app.get('/api/status', (req, res) => {
-    const publicIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const publicIp = getClientIp(req);
     const devices = getDevicesByPublicIp(publicIp);
     res.json({ 
         active: devices.length > 0, 
@@ -51,9 +59,10 @@ app.post('/api/create', (req, res) => {
     const linkId = crypto.randomUUID().substring(0, 8);
     magicLinks.set(linkId, { ...parsed, senderName, originalUrl: url, createdAt: Date.now() });
     
-    // Force plain http for magic links to prevent mobile browser Mixed Content blocks
+    // Determine protocol (supporting reverse proxies/Cloud Run)
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol;
     const host = req.get('host');
-    res.json({ linkId, relayUrl: `http://${host}/magic/${linkId}` });
+    res.json({ linkId, relayUrl: `${protocol}://${host}/magic/${linkId}` });
 });
 
 // 3. Resolve Magic Link (from Recipient)
@@ -68,7 +77,7 @@ app.get('/api/resolve/:linkId', (req, res) => {
         return res.status(410).json({ error: 'Link has expired' });
     }
 
-    const publicIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const publicIp = getClientIp(req);
     const devices = getDevicesByPublicIp(publicIp);
 
     res.json({
@@ -95,7 +104,7 @@ app.get('/api/resolve-code/:pairingCode', (req, res) => {
 });
 
 // Periodically clean up expired magic links every hour
-setInterval(() => {
+const cleanupMagicLinksInterval = setInterval(() => {
     const now = Date.now();
     for (const [linkId, link] of magicLinks.entries()) {
         if (now - link.createdAt > LINK_TTL) {
@@ -103,6 +112,10 @@ setInterval(() => {
         }
     }
 }, 60 * 60 * 1000);
+
+if (typeof cleanupMagicLinksInterval.unref === 'function') {
+    cleanupMagicLinksInterval.unref();
+}
 
 // Only listen if this file is run directly (useful for testing frameworks)
 if (require.main === module) {

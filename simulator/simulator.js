@@ -1,10 +1,36 @@
 const express = require('express');
 const opn = require('opn'); // Opens browser
 const http = require('http');
+const os = require('os');
 
 const app = express();
-const RELAY_URL = 'http://100.104.161.54:18000'; // Tailnet IP of Relay
+const RELAY_URL = process.env.RELAY_URL || 'http://localhost:18000';
 const ROKU_PORT = 8060;
+
+// Parse Relay URL
+let relayHost = 'localhost';
+let relayPort = 18000;
+try {
+    const parsedUrl = new URL(RELAY_URL);
+    relayHost = parsedUrl.hostname;
+    relayPort = parsedUrl.port || (parsedUrl.protocol === 'https:' ? 443 : 80);
+} catch (e) {
+    console.error(`⚠️ Invalid RELAY_URL "${RELAY_URL}", falling back to localhost:18000`);
+}
+
+// Dynamically auto-detect local network IP address
+function getLocalIp() {
+    const interfaces = os.networkInterfaces();
+    for (const name of Object.keys(interfaces)) {
+        for (const net of interfaces[name]) {
+            // Find first external IPv4 address
+            if (net.family === 'IPv4' && !net.internal) {
+                return net.address;
+            }
+        }
+    }
+    return 'localhost';
+}
 
 // 1. Mock ECP Launch Endpoint
 app.post('/launch/:appId', (req, res) => {
@@ -33,26 +59,29 @@ app.post('/launch/:appId', (req, res) => {
 
 // 2. Heartbeat to Relay
 function sendHeartbeat() {
-    // We need our local IP. In a simulator, we can just use 127.0.0.1 or let the server detect it.
-    // For simplicity, we'll let the Relay detect our Public/Tailnet IP.
-    const data = JSON.stringify({ localIp: 'localhost' });
+    const localIp = getLocalIp();
+    const data = JSON.stringify({ 
+        localIp,
+        deviceId: 'simulator',
+        deviceName: 'Roku Simulator (PC)'
+    });
     
     const options = {
-        hostname: '100.104.161.54',
-        port: 18000,
+        hostname: relayHost,
+        port: parseInt(relayPort),
         path: '/api/register',
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Content-Length': data.length
+            'Content-Length': Buffer.byteLength(data)
         }
     };
 
     const req = http.request(options, (res) => {
-        console.log(`📡 [Heartbeat] Registered with Relay (Status: ${res.statusCode})`);
+        console.log(`📡 [Heartbeat] Registered with Relay at ${RELAY_URL} (Status: ${res.statusCode})`);
     });
 
-    req.on('error', (e) => console.error(`❌ [Heartbeat] Relay unreachable: ${e.message}`));
+    req.on('error', (e) => console.error(`❌ [Heartbeat] Relay unreachable at ${relayHost}:${relayPort} - ${e.message}`));
     req.write(data);
     req.end();
 }
@@ -61,8 +90,10 @@ app.listen(ROKU_PORT, () => {
     console.log(`
 🎭 Roku Simulator Running on port ${ROKU_PORT}`);
     console.log(`🏠 Ready to receive commands from the Mobile Web Bridge.`);
+    console.log(`🌐 Local IP detected: ${getLocalIp()}`);
     
     // Heartbeat every 30 seconds
     sendHeartbeat();
     setInterval(sendHeartbeat, 30000);
 });
+

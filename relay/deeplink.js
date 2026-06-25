@@ -1,47 +1,71 @@
 function parseUrl(url) {
-    // 1. YouTube
-    // https://www.youtube.com/watch?v=Lt5LC71Ngus
-    if (url.includes('youtube.com') || url.includes('youtu.be')) {
-        const videoId = url.includes('watch?v=') ? url.split('watch?v=')[1].split('&')[0] : url.split('youtu.be/')[1].split('?')[0];
-        return {
-            appId: '837',
-            contentId: videoId,
-            mediaType: 'shortFormVideo'
-        };
-    }
+    if (!url || typeof url !== 'string') return null;
 
-    // 2. Netflix
-    // https://www.netflix.com/watch/81475311
-    if (url.includes('netflix.com/watch/')) {
-        const contentId = url.split('watch/')[1].split('?')[0];
-        return {
-            appId: '12',
-            contentId: contentId,
-            mediaType: 'movie'
-        };
-    }
+    try {
+        const parsed = new URL(url);
 
-    // 3. Amazon Prime Video
-    // https://www.amazon.com/gp/video/detail/B00XXXXXXX
-    if (url.includes('amazon.com') && url.includes('/detail/')) {
-        const asin = url.split('/detail/')[1].split('/')[0].split('?')[0];
-        return {
-            appId: '13',
-            contentId: asin,
-            mediaType: 'movie'
-        };
-    }
+        // 1. YouTube
+        if (parsed.hostname.includes('youtube.com') || parsed.hostname.includes('youtu.be')) {
+            let videoId = '';
+            if (parsed.hostname.includes('youtu.be')) {
+                videoId = parsed.pathname.substring(1).split('/')[0];
+            } else if (parsed.pathname.includes('/watch')) {
+                videoId = parsed.searchParams.get('v') || '';
+            } else if (parsed.pathname.includes('/embed/')) {
+                const parts = parsed.pathname.split('/embed/');
+                if (parts[1]) videoId = parts[1].split('/')[0];
+            } else if (parsed.pathname.includes('/shorts/')) {
+                const parts = parsed.pathname.split('/shorts/');
+                if (parts[1]) videoId = parts[1].split('/')[0];
+            }
 
-    // 4. EWTN (Live Default)
-    if (url.includes('ewtn.com')) {
-        return {
-            appId: '186',
-            contentId: 'live',
-            mediaType: 'live'
-        };
+            if (videoId) {
+                return {
+                    appId: '837',
+                    contentId: videoId,
+                    mediaType: 'shortFormVideo'
+                };
+            }
+        }
+
+        // 2. Netflix
+        if (parsed.hostname.includes('netflix.com')) {
+            const match = parsed.pathname.match(/\/(watch|title)\/([^/]+)/);
+            if (match && match[2]) {
+                return {
+                    appId: '12',
+                    contentId: match[2],
+                    mediaType: match[1] === 'watch' ? 'movie' : 'series'
+                };
+            }
+        }
+
+        // 3. Amazon Prime Video
+        if (parsed.hostname.includes('amazon.com')) {
+            const match = parsed.pathname.match(/\/(detail|dp|v)\/([^/]+)/);
+            if (match && match[2]) {
+                return {
+                    appId: '13',
+                    contentId: match[2],
+                    mediaType: 'movie'
+                };
+            }
+        }
+
+        // 4. EWTN (Live Default)
+        if (parsed.hostname.includes('ewtn.com')) {
+            return {
+                appId: '186',
+                contentId: 'live',
+                mediaType: 'live'
+            };
+        }
+    } catch (e) {
+        // Handle invalid URL formats gracefully
     }
 
     return null;
 }
 
 module.exports = { parseUrl };
+
