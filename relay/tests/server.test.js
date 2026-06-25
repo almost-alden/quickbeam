@@ -1,29 +1,5 @@
 const request = require('supertest');
-const express = require('express');
-const { registerDevice } = require('../registry');
-const { parseUrl } = require('../deeplink');
-
-// Mocking uuid to avoid ESM issues in tests
-const uuidv4 = () => 'mocked-uuid-1234';
-
-const app = express();
-app.use(express.json());
-const magicLinks = new Map();
-
-app.post('/api/create', (req, res) => {
-    const { url, senderName } = req.body;
-    const parsed = parseUrl(url);
-    if (!parsed) return res.status(400).json({ error: 'URL not supported' });
-    const linkId = uuidv4().substring(0, 8);
-    magicLinks.set(linkId, { ...parsed, senderName, createdAt: Date.now() });
-    res.json({ linkId });
-});
-
-app.get('/api/resolve/:linkId', (req, res) => {
-    const link = magicLinks.get(req.params.linkId);
-    if (!link) return res.status(404).json({ error: 'Link not found' });
-    res.json(link);
-});
+const app = require('../server');
 
 describe('Relay Server API', () => {
     test('POST /api/create -> GET /api/resolve', async () => {
@@ -35,14 +11,16 @@ describe('Relay Server API', () => {
             });
         
         expect(createRes.status).toBe(200);
-        expect(createRes.body.linkId).toBe('mocked-u');
+        expect(createRes.body.linkId).toBeDefined();
+        expect(createRes.body.relayUrl).toBeDefined();
 
         const resolveRes = await request(app)
             .get(`/api/resolve/${createRes.body.linkId}`);
         
         expect(resolveRes.status).toBe(200);
         expect(resolveRes.body.senderName).toBe('Johnny');
-        expect(resolveRes.body.appId).toBe('837');
+        expect(resolveRes.body.appId).toBe('837'); // YouTube App ID
+        expect(resolveRes.body.contentId).toBe('dQw4w9WgXcQ');
     });
 
     test('Unsupported URL returns 400', async () => {
@@ -50,5 +28,28 @@ describe('Relay Server API', () => {
             .post('/api/create')
             .send({ url: 'https://badsite.com' });
         expect(res.status).toBe(400);
+    });
+
+    test('POST /api/register -> GET /api/status', async () => {
+        // Register a device
+        const registerRes = await request(app)
+            .post('/api/register')
+            .send({
+                localIp: '192.168.1.100',
+                deviceId: 'test-device-123',
+                deviceName: 'Test Roku'
+            });
+        
+        expect(registerRes.status).toBe(200);
+        expect(registerRes.body.status).toBe('ok');
+
+        // Check status (supertest defaults remoteAddress, so registration and status match IPs)
+        const statusRes = await request(app)
+            .get('/api/status');
+        
+        expect(statusRes.status).toBe(200);
+        expect(statusRes.body.active).toBe(true);
+        expect(statusRes.body.devices.length).toBeGreaterThan(0);
+        expect(statusRes.body.devices[0].deviceName).toBe('Test Roku');
     });
 });

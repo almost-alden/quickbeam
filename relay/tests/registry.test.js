@@ -1,29 +1,51 @@
-const { registerDevice, findDeviceByPublicIp } = require('../registry');
+const { registerDevice, getDevicesByPublicIp } = require('../registry');
 
 describe('Device Registry', () => {
     test('Successful registration and retrieval', () => {
         const publicIp = '1.1.1.1';
         const localIp = '192.168.1.100';
         
-        registerDevice(publicIp, localIp);
-        const device = findDeviceByPublicIp(publicIp);
+        registerDevice(publicIp, localIp, 'roku-123', 'Living Room Roku');
+        const devices = getDevicesByPublicIp(publicIp);
         
-        expect(device).toBeDefined();
-        expect(device.localIp).toBe(localIp);
+        expect(devices.length).toBe(1);
+        expect(devices[0].localIp).toBe(localIp);
+        expect(devices[0].deviceId).toBe('roku-123');
+        expect(devices[0].deviceName).toBe('Living Room Roku');
     });
 
-    test('Non-existent IP returns null', () => {
-        expect(findDeviceByPublicIp('2.2.2.2')).toBeNull();
+    test('Multiple devices registered under the same public IP', () => {
+        const publicIp = '2.2.2.2';
+        registerDevice(publicIp, '192.168.1.100', 'roku-1', 'Living Room');
+        registerDevice(publicIp, '192.168.1.101', 'roku-2', 'Bedroom');
+
+        const devices = getDevicesByPublicIp(publicIp);
+        expect(devices.length).toBe(2);
+        
+        const names = devices.map(d => d.deviceName);
+        expect(names).toContain('Living Room');
+        expect(names).toContain('Bedroom');
     });
 
-    test('TTL Expiry (Mocking time)', () => {
+    test('Non-existent IP returns empty array', () => {
+        expect(getDevicesByPublicIp('9.9.9.9')).toEqual([]);
+    });
+
+    test('TTL Expiry via Date.now mocking', () => {
         const publicIp = '3.3.3.3';
-        registerDevice(publicIp, '10.0.0.5');
+        const realDateNow = Date.now;
         
-        // Mocking manual expiration by reaching into the map
-        const device = findDeviceByPublicIp(publicIp);
-        device.lastSeen = Date.now() - (1000 * 60 * 61); // 61 minutes ago
+        Date.now = jest.fn(() => 1000000000000);
+        registerDevice(publicIp, '10.0.0.5', 'roku-ttl', 'Expired Device');
+        
+        // Verify registered
+        expect(getDevicesByPublicIp(publicIp).length).toBe(1);
 
-        expect(findDeviceByPublicIp(publicIp)).toBeNull();
+        // Move time forward by 61 minutes
+        Date.now = jest.fn(() => 1000000000000 + (1000 * 60 * 61));
+        expect(getDevicesByPublicIp(publicIp).length).toBe(0);
+
+        // Restore real Date.now
+        Date.now = realDateNow;
     });
 });
