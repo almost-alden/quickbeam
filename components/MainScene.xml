@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="MainScene" extends="Scene">
+    <script type="text/brightscript" uri="pkg:/components/MainScene.brs" />
+    <children>
+        <Label
+            id="welcomeLabel"
+            text="Welcome to Quickbeam"
+            width="1920"
+            height="1080"
+            horizAlign="center"
+            vertAlign="center" />
+    </children>
+</component>
