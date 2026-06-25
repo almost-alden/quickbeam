@@ -11,7 +11,7 @@ This workspace skill defines the active tracks, architectural decisions, and tes
 
 ```mermaid
 graph TD
-    subgraph Track 1: Relay Cloud
+    subgraph Track 1: Relay Cloud (HTTP)
         A[registry.js] --> B[server.js]
         B --> C[Sender Dashboard]
     end
@@ -34,14 +34,16 @@ graph TD
 *   [x] Initialize core relay server and IP-matching registry.
 *   [x] Implement dynamic magic link creation and URL resolution.
 *   [x] Build sender dashboard with status indicator.
+*   [ ] **Next Up**: Serve over plain HTTP to avoid browser Mixed Content blocks when communicating with local Roku ECP (HTTP).
 *   [ ] **Next Up**: Secure session validation and link expiration (TTL).
 *   [ ] **Next Up**: Robust device-matching for cases with multiple Rokus on one public IP.
 
 #### 📺 Track 2: Roku Receiver (BrightScript)
 *   [x] Create basic SceneGraph boilerplate.
 *   [x] Implement heartbeat registration to Relay (POST `/api/register`).
+*   [ ] **Next Up**: Implement 6-digit numeric pairing code generation and display on-screen as a fallback.
+*   [ ] **Next Up**: Generate a QR code containing the Roku's local IP address on the TV screen.
 *   [ ] **Next Up**: Display status interface showing connection state (e.g., "Ready for helper to cast").
-*   [ ] **Next Up**: Generate fallback pairing code/QR code on screen if same-roof matching fails.
 
 #### 🔗 Track 3: Deep Link Engine (JS)
 *   [x] Basic parsing of YouTube, Netflix, Prime Video, and EWTN.
@@ -51,8 +53,10 @@ graph TD
 #### 📱 Track 4: Mobile Web Bridge (HTML/JS)
 *   [x] Resolve recipient magic link from Relay.
 *   [x] Attempt direct same-roof pairing via local IP.
-*   [ ] **Next Up**: Handle Mixed Content security constraints (HTTPS -> HTTP local ECP).
-*   [ ] **Next Up**: Implement manual pairing UI (IP input / QR scanner) for cellular/NAT failures.
+*   [ ] **Next Up**: Implement manual fallback input page supporting:
+    *   Entering the 6-digit pairing code shown on TV.
+    *   Scanning the QR code shown on TV.
+    *   Manual local IP input.
 
 ---
 
@@ -72,7 +76,7 @@ To simulate a real-world deployment where the Relay is in the cloud, the Sender 
                  │        Alden Network          │
                  │    Public IP: [Alden Public]  │
                  └───────────────┬───────────────┘
-                                 │ (Tailscale / WAN)
+                                 │ (Public HTTP Tunnel / WAN)
                  ┌───────────────┴───────────────┐
                  │         Home Network          │
                  │    Public IP: [Home Public]   │
@@ -84,16 +88,12 @@ To simulate a real-world deployment where the Relay is in the cloud, the Sender 
              └───────────────────┘   └───────────────────┘
 ```
 
-### 🧪 Simulation Roles
-*   **Relay Cloud Server**: Runs on `gateway` (or `lenny`) hosted on the **Alden Network**.
-*   **Sender**: Accesses the web dashboard on the **Alden Network** or remotely.
-*   **Recipient & Roku**: Connected to the **Home Network** (e.g., a phone and a Roku TV or simulator).
-
-### ⚙️ Verification Steps
-1. **Launch Relay**: Start the server on `gateway` / `lenny` (`npm start` in `/relay`).
-2. **Launch Roku / Simulator**: Run the Roku app or simulator on the **Home Network**.
-   * *Note: The Roku app/simulator must point to the Relay's reachable IP (e.g., its Tailnet IP or a configured local port forward).*
-3. **Check Heartbeat**: Confirm the Relay registers the Roku under the **Home Network's public IP**.
-4. **Generate Magic Link**: As a Sender, submit a video link to the dashboard to get a `magic.html` URL.
-5. **Open on Phone**: Disconnect the recipient phone from the Alden network (ensure it is on the Home Network Wi-Fi). Load the magic link.
-6. **Trigger Launch**: Tap "Play on TV". The phone should resolve the Roku's local IP from the Relay and send the command directly over the local Home Network.
+### 🧪 Simulation Setup
+To test cross-network connectivity without compromising the isolation between the **Alden Network** and the **Home Network**:
+1. **Expose the Relay Server**: Run the Relay Server on port `18000` on the Alden network, and expose it to the internet using a public HTTP tunnel (e.g., `ngrok http 18000` or `lt --port 18000`).
+2. **Point Roku & Phone to Tunnel**: Use the generated public HTTP tunnel URL (e.g., `http://xxxx.ngrok-free.app`) as the `RELAY_URL` in the Roku channel and the recipient's magic links.
+3. **Verify WAN Loop**: 
+   * The Roku on the **Home Network** sends its heartbeat to the public tunnel URL. The server registers it under the **Home Network's public IP**.
+   * The Sender on the **Alden Network** creates a magic link.
+   * The Phone on the **Home Network** (on Wi-Fi) opens the magic link. The Relay Server detects the phone's public IP, matches it to the Roku's public IP, and returns the Roku's local IP address to the phone.
+   * The Phone launches the video over the local Home Network (`http://<Roku Local IP>:8060/launch/...`).
