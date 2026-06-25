@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quickbeam | Sender Dashboard</title>
+    <!-- PWA & Mobile Optimization -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#8b5cf6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="/images/icon-512.jpg">
+    
     <!-- Modern typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -318,6 +325,90 @@
             color: var(--text-secondary);
             text-align: center;
         }
+
+        /* Contacts directory styling */
+        .contacts-section {
+            margin-top: 1.5rem;
+            margin-bottom: 1.5rem;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 1.25rem;
+        }
+
+        .contacts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .contact-btn {
+            background: rgba(139, 92, 246, 0.06);
+            border: 1px solid rgba(139, 92, 246, 0.15);
+            color: var(--text-primary);
+            border-radius: 12px;
+            padding: 0.75rem 0.5rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+            position: relative;
+            box-sizing: border-box;
+        }
+
+        .contact-btn:hover {
+            background: rgba(139, 92, 246, 0.15);
+            border-color: rgba(139, 92, 246, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .contact-btn:active {
+            transform: translateY(1px);
+        }
+
+        .contact-btn .delete-contact {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 2px;
+            border-radius: 50%;
+            display: inline-flex;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .contact-btn:hover .delete-contact {
+            opacity: 1;
+        }
+
+        .contact-btn .delete-contact:hover {
+            color: var(--error-text);
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .contact-initials {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(139, 92, 246, 0.2);
+            color: #c084fc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
     </style>
 </head>
 <body>
@@ -345,6 +436,19 @@
             <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
         </button>
 
+        <!-- Contacts Directory Section -->
+        <div class="contacts-section">
+            <label>Quick Send to Contact</label>
+            <div id="contacts-container" class="contacts-grid">
+                <!-- Rendered dynamically -->
+            </div>
+            <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; align-items: center;">
+                <input type="text" id="newContactName" placeholder="Name (e.g. Mom)" style="padding: 0.6rem 0.8rem; font-size: 0.85rem; flex-grow: 1;">
+                <input type="text" id="newContactCode" placeholder="TV Code (Optional)" style="padding: 0.6rem 0.8rem; font-size: 0.85rem; width: 120px;">
+                <button class="copy-btn" onclick="saveContact()" style="padding: 0.6rem 1rem; font-size: 0.85rem; height: 38px;">+ Add</button>
+            </div>
+        </div>
+
         <div id="result">
             <label>Magic Link Ready!</label>
             <div class="link-container">
@@ -361,6 +465,41 @@
     <script>
         // Load saved sender name on startup
         document.getElementById('senderName').value = localStorage.getItem('quickbeam_sender_name') || '';
+
+        // PWA Setup and Share Target Interception
+        window.addEventListener('DOMContentLoaded', () => {
+            // Parse Web Share Target API query params (e.g. from YouTube Share)
+            const parsedUrl = new URL(window.location.href);
+            const sharedUrl = parsedUrl.searchParams.get('url');
+            const sharedText = parsedUrl.searchParams.get('text');
+            
+            let targetUrl = '';
+            if (sharedUrl) {
+                targetUrl = sharedUrl;
+            } else if (sharedText) {
+                // Extracts HTTP URLs embedded in share text (common in YouTube mobile share)
+                const urlMatch = sharedText.match(/https?:\/\/[^\s]+/);
+                if (urlMatch) {
+                    targetUrl = urlMatch[0];
+                } else {
+                    targetUrl = sharedText;
+                }
+            }
+            
+            if (targetUrl) {
+                document.getElementById('videoUrl').value = targetUrl;
+            }
+            
+            // Register Service Worker
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(() => console.log('[PWA] Service Worker Registered'))
+                    .catch(err => console.error('[PWA] Service Worker Register Fail', err));
+            }
+            
+            // Render contacts list
+            renderContacts();
+        });
 
         async function checkStatus() {
             try {
@@ -389,7 +528,6 @@
             
             if (!url) return alert("Please paste a URL");
 
-            // Save sender name for future use
             if (senderName) {
                 localStorage.setItem('quickbeam_sender_name', senderName);
             } else {
@@ -415,6 +553,142 @@
             }
         }
 
+        // Contact Management Logic
+        function getContacts() {
+            try {
+                return JSON.parse(localStorage.getItem('quickbeam_contacts')) || [
+                    { name: "Mom's Cell", code: "" }
+                ];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function saveContactsList(contacts) {
+            localStorage.setItem('quickbeam_contacts', JSON.stringify(contacts));
+        }
+
+        function saveContact() {
+            const nameInput = document.getElementById('newContactName');
+            const codeInput = document.getElementById('newContactCode');
+            const name = nameInput.value.trim();
+            const code = codeInput.value.trim().replace(/\s+/g, '');
+
+            if (!name) return alert("Please enter a contact name.");
+
+            const contacts = getContacts();
+            // Avoid duplicate name
+            if (contacts.some(c => c.name.toLowerCase() === name.toLowerCase())) {
+                return alert("A contact with this name already exists.");
+            }
+
+            contacts.push({ name, code });
+            saveContactsList(contacts);
+
+            nameInput.value = '';
+            codeInput.value = '';
+            renderContacts();
+        }
+
+        function deleteContact(index, event) {
+            if (event) event.stopPropagation();
+            if (!confirm("Are you sure you want to delete this contact?")) return;
+            const contacts = getContacts();
+            contacts.splice(index, 1);
+            saveContactsList(contacts);
+            renderContacts();
+        }
+
+        function renderContacts() {
+            const container = document.getElementById('contacts-container');
+            container.innerHTML = '';
+            const contacts = getContacts();
+
+            contacts.forEach((contact, index) => {
+                const btn = document.createElement('div');
+                btn.className = 'contact-btn';
+                btn.onclick = () => sendToContact(contact);
+
+                // Initials
+                const initials = document.createElement('div');
+                initials.className = 'contact-initials';
+                initials.innerText = contact.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                btn.appendChild(initials);
+
+                // Name text
+                const nameSpan = document.createElement('span');
+                nameSpan.innerText = contact.name;
+                nameSpan.style.whiteSpace = 'nowrap';
+                nameSpan.style.overflow = 'hidden';
+                nameSpan.style.textOverflow = 'ellipsis';
+                nameSpan.style.width = '100%';
+                btn.appendChild(nameSpan);
+
+                // Code indicator if pre-paired
+                if (contact.code) {
+                    const codeLabel = document.createElement('span');
+                    codeLabel.innerText = "Code: " + contact.code;
+                    codeLabel.style.fontSize = '0.65rem';
+                    codeLabel.style.color = 'var(--text-secondary)';
+                    btn.appendChild(codeLabel);
+                }
+
+                // Delete button
+                const delBtn = document.createElement('button');
+                delBtn.className = 'delete-contact';
+                delBtn.innerHTML = '<svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+                delBtn.onclick = (e) => deleteContact(index, e);
+                btn.appendChild(delBtn);
+
+                container.appendChild(btn);
+            });
+        }
+
+        async function sendToContact(contact) {
+            const url = document.getElementById('videoUrl').value.trim();
+            const senderName = document.getElementById('senderName').value.trim();
+            
+            if (!url) return alert("Please paste a Video URL first.");
+            
+            if (senderName) {
+                localStorage.setItem('quickbeam_sender_name', senderName);
+            }
+
+            try {
+                const res = await fetch('/api/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url, senderName, pairingCode: contact.code })
+                });
+                
+                const data = await res.json();
+                if (data.relayUrl) {
+                    document.getElementById('result').style.display = 'block';
+                    document.getElementById('outputLink').innerText = data.relayUrl;
+                    
+                    // Trigger web sharing if supported
+                    if (navigator.share) {
+                        try {
+                            await navigator.share({
+                                title: 'Quickbeam Link ⚡️',
+                                text: `Hi ${contact.name}, ${senderName || 'Your friend'} sent you a video!`,
+                                url: data.relayUrl
+                            });
+                        } catch (err) {
+                            console.log('User dismissed share dialog', err);
+                        }
+                    } else {
+                        await navigator.clipboard.writeText(data.relayUrl);
+                        alert(`Magic Link generated and copied to clipboard!\nSend it to ${contact.name}:\n${data.relayUrl}`);
+                    }
+                } else {
+                    alert("Error: " + (data.error || "Unknown error"));
+                }
+            } catch (e) {
+                alert("Failed to connect to Relay server.");
+            }
+        }
+
         async function copyLink() {
             const linkText = document.getElementById('outputLink').innerText;
             try {
@@ -425,14 +699,11 @@
                 
                 btnSpan.innerText = 'Copied!';
                 copyBtn.classList.add('copied');
-                
-                // Switch to checkmark icon
                 btnIcon.innerHTML = '<polyline points="20 6 9 17 4 12"></polyline>';
                 
                 setTimeout(() => {
                     btnSpan.innerText = 'Copy';
                     copyBtn.classList.remove('copied');
-                    // Reset to copy icon
                     btnIcon.innerHTML = '<rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>';
                 }, 2000);
             } catch (e) {

@@ -81,4 +81,22 @@ describe('Relay Server API', () => {
             .get('/api/resolve-code/999999');
         expect(res.status).toBe(404);
     });
+
+    test('POST /api/create with pairingCode -> GET /api/resolve returns pairingCode', async () => {
+        const createRes = await request(app)
+            .post('/api/create')
+            .send({
+                url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+                senderName: 'Johnny',
+                pairingCode: '111222'
+            });
+        
+        expect(createRes.status).toBe(200);
+        
+        const resolveRes = await request(app)
+            .get(`/api/resolve/${createRes.body.linkId}`);
+        
+        expect(resolveRes.status).toBe(200);
+        expect(resolveRes.body.pairingCode).toBe('111222');
+    });
 });

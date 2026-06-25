@@ -25,8 +25,8 @@ sub Main()
     if deviceName = "" then deviceName = "Roku TV"
     globalAA.deviceName = deviceName
 
-    ' 3. Relay URL configuration (using Tailnet/Tunnel IP for testing)
-    globalAA.relayUrl = "http://100.104.161.54:18000"
+    ' 3. Relay URL configuration (Production Cloud Run URL)
+    globalAA.relayUrl = "https://quickbeam-relay-470817308605.us-central1.run.app"
 
     ' 4. Pass connection settings to SceneGraph
     scene.pairingCode = globalAA.pairingCode

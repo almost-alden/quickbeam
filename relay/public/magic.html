@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quickbeam | Welcome!</title>
+    <!-- PWA & Mobile Optimization -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#8b5cf6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="/images/icon-512.jpg">
+
     <!-- Modern typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -496,8 +503,28 @@
         let linkData = null;
         let autoDetectedDevices = [];
 
+        // Register Service Worker on load
+        window.addEventListener('DOMContentLoaded', () => {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(() => console.log('[PWA] Service Worker Registered for Magic'))
+                    .catch(err => console.error('[PWA] Service Worker Register Fail', err));
+            }
+        });
+
         // Fetch magic link resolution and matching devices
         async function resolveLink() {
+            if (linkId === 'magic.html' || !linkId) {
+                // TV Pairing mode without active video link
+                linkData = null;
+                document.getElementById('sender-msg').innerText = "Connect to Roku TV ⚡️";
+                document.getElementById('instruction').innerText = "Pair this TV to your phone to receive videos.";
+                document.getElementById('content-info').innerText = "Quickbeam TV Pairing";
+                autoDetectedDevices = [];
+                initDeviceSelection();
+                return;
+            }
+
             try {
                 const res = await fetch(`/api/resolve/${linkId}`);
                 linkData = await res.json();
@@ -524,15 +551,46 @@
             }
         }
 
+        // Auto-resolve pairing codes from SMS/Contact config
+        async function resolvePairingCode(code) {
+            try {
+                const res = await fetch(`/api/resolve-code/${code}`);
+                const data = await res.json();
+                if (data.status === 'paired' && data.device) {
+                    const dev = data.device;
+                    // Add to manual devices list if not already present
+                    const manualDevices = getManualDevices();
+                    if (!manualDevices.some(d => d.ip === dev.localIp)) {
+                        manualDevices.push({ name: dev.deviceName, ip: dev.localIp });
+                        saveManualDevices(manualDevices);
+                    }
+                    selectDevice(dev.localIp, dev.deviceName);
+                    return true;
+                }
+            } catch (e) {
+                console.error("Failed to auto-resolve pairing code:", e);
+            }
+            return false;
+        }
+
         // Initialize device selector and retrieve active choice
-        function initDeviceSelection() {
+        async function initDeviceSelection() {
             const manualDevices = getManualDevices();
             
             // Render device list into selector panel
             renderDeviceList(manualDevices);
 
-            // Determine active device:
-            // 1. Check if there's a saved active device IP in localStorage
+            // 1. Resolve pairing code if passed in URL query param or saved in linkData
+            const parsedUrl = new URL(window.location.href);
+            const queryCode = parsedUrl.searchParams.get('code');
+            const codeToResolve = queryCode || (linkData && linkData.pairingCode);
+
+            if (codeToResolve) {
+                const success = await resolvePairingCode(codeToResolve);
+                if (success) return;
+            }
+
+            // 2. Check if there's a saved active device IP in localStorage
             const savedActiveIp = localStorage.getItem('quickbeam_active_device_ip');
             if (savedActiveIp) {
                 // Find matching device details in manual or auto list
@@ -545,21 +603,21 @@
                 }
             }
 
-            // 2. Fallback: Check if we have auto-detected devices and pick the first
+            // 3. Fallback: Check if we have auto-detected devices and pick the first
             if (autoDetectedDevices.length > 0) {
                 const firstAuto = autoDetectedDevices[0];
                 selectDevice(firstAuto.localIp, firstAuto.deviceName);
                 return;
             }
 
-            // 3. Fallback: Check if we have any manual devices and pick the first
+            // 4. Fallback: Check if we have any manual devices and pick the first
             if (manualDevices.length > 0) {
                 const firstManual = manualDevices[0];
                 selectDevice(firstManual.ip, firstManual.name);
                 return;
             }
 
-            // 4. Default: No devices found, show the selection panel
+            // 5. Default: No devices found, show the selection panel
             showNoDevicesState();
         }
 
