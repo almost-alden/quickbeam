@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
 const { registerDevice, getDevicesByPublicIp, findDeviceByPairingCode } = require('./registry');
 const { parseUrl } = require('./deeplink');
 
@@ -48,7 +48,7 @@ app.post('/api/create', (req, res) => {
         return res.status(400).json({ error: 'URL not supported yet' });
     }
 
-    const linkId = uuidv4().substring(0, 8);
+    const linkId = crypto.randomUUID().substring(0, 8);
     magicLinks.set(linkId, { ...parsed, senderName, originalUrl: url, createdAt: Date.now() });
     
     // Dynamically build the relayUrl using the current host
