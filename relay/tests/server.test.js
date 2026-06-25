@@ -52,4 +52,33 @@ describe('Relay Server API', () => {
         expect(statusRes.body.devices.length).toBeGreaterThan(0);
         expect(statusRes.body.devices[0].deviceName).toBe('Test Roku');
     });
+
+    test('POST /api/register with pairing code -> GET /api/resolve-code', async () => {
+        // Register device with code
+        const registerRes = await request(app)
+            .post('/api/register')
+            .send({
+                localIp: '192.168.1.120',
+                deviceId: 'device-code-test',
+                deviceName: 'Den TV',
+                pairingCode: '555666'
+            });
+        
+        expect(registerRes.status).toBe(200);
+
+        // Resolve code
+        const res = await request(app)
+            .get('/api/resolve-code/555666');
+        
+        expect(res.status).toBe(200);
+        expect(res.body.status).toBe('paired');
+        expect(res.body.device.localIp).toBe('192.168.1.120');
+        expect(res.body.device.deviceName).toBe('Den TV');
+    });
+
+    test('Non-existent pairing code returns 404', async () => {
+        const res = await request(app)
+            .get('/api/resolve-code/999999');
+        expect(res.status).toBe(404);
+    });
 });

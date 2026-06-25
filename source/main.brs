@@ -6,6 +6,32 @@ sub Main()
     scene = screen.CreateScene("MainScene")
     screen.Show()
 
+    globalAA = GetGlobalAA()
+
+    ' 1. Generate 6-digit pairing code
+    pairingCode = ""
+    for i = 1 to 6
+        digit = Rnd(10) - 1
+        pairingCode = pairingCode + Stri(digit).Trim()
+    end for
+    globalAA.pairingCode = pairingCode
+
+    ' 2. Setup device identity
+    di = CreateObject("roDeviceInfo")
+    globalAA.deviceId = di.GetChannelClientId()
+    
+    deviceName = di.GetFriendlyName()
+    if deviceName = "" then deviceName = di.GetModelDisplayName()
+    if deviceName = "" then deviceName = "Roku TV"
+    globalAA.deviceName = deviceName
+
+    ' 3. Relay URL configuration (using Tailnet/Tunnel IP for testing)
+    globalAA.relayUrl = "http://100.104.161.54:18000"
+
+    ' 4. Pass connection settings to SceneGraph
+    scene.pairingCode = globalAA.pairingCode
+    scene.relayUrl = globalAA.relayUrl
+
     ' Start the Heartbeat to Relay
     timer = CreateObject("roTimer")
     timer.SetMessagePort(m.port)
@@ -27,6 +53,7 @@ sub Main()
 end sub
 
 function RegisterWithRelay()
+    globalAA = GetGlobalAA()
     di = CreateObject("roDeviceInfo")
     addrs = di.GetIPAddrs()
     localIp = ""
@@ -36,12 +63,17 @@ function RegisterWithRelay()
 
     if localIp <> ""
         request = CreateObject("roUrlTransfer")
-        request.SetUrl("http://100.104.161.54:18000/api/register") ' Use Tailnet IP for prototype
+        request.SetUrl(globalAA.relayUrl + "/api/register")
         request.SetRequest("POST")
         request.AddHeader("Content-Type", "application/json")
         
-        body = { localIp: localIp }
+        body = { 
+            localIp: localIp,
+            deviceId: globalAA.deviceId,
+            deviceName: globalAA.deviceName,
+            pairingCode: globalAA.pairingCode
+        }
         request.AsyncPostFromString(FormatJson(body))
-        print "[Quickbeam] Heartbeat sent: " + localIp
+        print "[Quickbeam] Heartbeat sent: " + localIp + " (Code: " + globalAA.pairingCode + ")"
     end if
 end function

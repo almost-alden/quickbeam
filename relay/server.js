@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
-const { registerDevice, getDevicesByPublicIp } = require('./registry');
+const { registerDevice, getDevicesByPublicIp, findDeviceByPairingCode } = require('./registry');
 const { parseUrl } = require('./deeplink');
 
 const app = express();
@@ -23,8 +23,8 @@ app.get('/magic/:linkId', (req, res) => {
 // 1. Device Registration (from Roku)
 app.post('/api/register', (req, res) => {
     const publicIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-    const { localIp, deviceId, deviceName } = req.body;
-    registerDevice(publicIp, localIp, deviceId, deviceName);
+    const { localIp, deviceId, deviceName, pairingCode } = req.body;
+    registerDevice(publicIp, localIp, deviceId, deviceName, pairingCode);
     res.json({ status: 'ok', matchIp: publicIp });
 });
 
@@ -76,6 +76,22 @@ app.get('/api/resolve/:linkId', (req, res) => {
         ...link,
         devices, // Return all matching devices
         status: devices.length > 0 ? 'paired' : 'not_paired'
+    });
+});
+
+// 4. Resolve pairing code (from manual input on mobile bridge)
+app.get('/api/resolve-code/:pairingCode', (req, res) => {
+    const device = findDeviceByPairingCode(req.params.pairingCode);
+    if (!device) {
+        return res.status(404).json({ error: 'Pairing code not found or expired' });
+    }
+    res.json({
+        status: 'paired',
+        device: {
+            localIp: device.localIp,
+            deviceId: device.deviceId,
+            deviceName: device.deviceName
+        }
     });
 });
 

@@ -1,13 +1,64 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <component name="MainScene" extends="Scene">
     <script type="text/brightscript" uri="pkg:/components/MainScene.brs" />
+    
+    <interface>
+        <field id="pairingCode" type="string" onChange="onPairingCodeChange" />
+        <field id="relayUrl" type="string" onChange="onRelayUrlChange" />
+    </interface>
+
     <children>
-        <Label
-            id="welcomeLabel"
-            text="Welcome to Quickbeam"
+        <!-- Dark Premium Background -->
+        <Rectangle
             width="1920"
             height="1080"
-            horizAlign="center"
-            vertAlign="center" />
+            color="0x12121AFF" />
+
+        <!-- Header -->
+        <LayoutGroup translation="[100, 100]" layoutDirection="vert" itemSpacings="[10]">
+            <Label
+                text="Quickbeam ⚡️"
+                font="font:LargeBoldSystemFont"
+                color="0x673AB7FF" />
+            <Label
+                text="The Remote Roku Bridge"
+                font="font:MediumSystemFont"
+                color="0x8E8E93FF" />
+        </LayoutGroup>
+
+        <!-- Left Side: Pairing Code -->
+        <LayoutGroup translation="[200, 350]" layoutDirection="vert" itemSpacings="[30]">
+            <Label
+                text="ENTER PAIRING CODE"
+                font="font:SmallBoldSystemFont"
+                color="0x8E8E93FF" />
+            <Label
+                id="pairingCodeLabel"
+                text="--- ---"
+                color="0xFFFFFFFF">
+                <Font role="font" uri="global:/font/SystemFont" size="90" />
+            </Label>
+            <Label
+                id="statusLabel"
+                text="Initializing connection..."
+                font="font:SmallSystemFont"
+                color="0xFFD60AFF" />
+        </LayoutGroup>
+
+        <!-- Right Side: QR Code -->
+        <LayoutGroup translation="[1100, 320]" layoutDirection="vert" itemSpacings="[20]" horizAlignment="center">
+            <Label
+                text="SCAN TO CONNECT INSTANTLY"
+                font="font:SmallBoldSystemFont"
+                color="0x8E8E93FF" />
+            <Poster
+                id="qrCodePoster"
+                width="300"
+                height="300" />
+            <Label
+                text="Point your phone camera at the screen"
+                font="font:SmallSystemFont"
+                color="0x8E8E93FF" />
+        </LayoutGroup>
     </children>
 </component>

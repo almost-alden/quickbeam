@@ -1,17 +1,29 @@
-const { registerDevice, getDevicesByPublicIp } = require('../registry');
+const { registerDevice, getDevicesByPublicIp, findDeviceByPairingCode } = require('../registry');
 
 describe('Device Registry', () => {
     test('Successful registration and retrieval', () => {
         const publicIp = '1.1.1.1';
         const localIp = '192.168.1.100';
         
-        registerDevice(publicIp, localIp, 'roku-123', 'Living Room Roku');
+        registerDevice(publicIp, localIp, 'roku-123', 'Living Room Roku', '123456');
         const devices = getDevicesByPublicIp(publicIp);
         
         expect(devices.length).toBe(1);
         expect(devices[0].localIp).toBe(localIp);
         expect(devices[0].deviceId).toBe('roku-123');
         expect(devices[0].deviceName).toBe('Living Room Roku');
+    });
+
+    test('Resolve device by pairing code', () => {
+        const publicIp = '4.4.4.4';
+        const localIp = '192.168.1.105';
+        
+        registerDevice(publicIp, localIp, 'roku-code-test', 'Kitchen Roku', '888999');
+        const device = findDeviceByPairingCode('888999');
+        
+        expect(device).toBeDefined();
+        expect(device.localIp).toBe(localIp);
+        expect(device.deviceName).toBe('Kitchen Roku');
     });
 
     test('Multiple devices registered under the same public IP', () => {
