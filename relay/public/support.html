@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quickbeam | Support & Feedback</title>
+    <!-- PWA & Mobile Optimization -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#8b5cf6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="/images/icon-512.jpg">
+    
+    <!-- Modern typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: rgba(20, 26, 45, 0.6);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --primary: #8b5cf6;
+            --primary-hover: #7c3aed;
+            --primary-glow: rgba(139, 92, 246, 0.3);
+            --success: #10b981;
+            --success-bg: rgba(16, 185, 129, 0.1);
+            --success-border: rgba(16, 185, 129, 0.2);
+            --success-text: #34d399;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.15) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: var(--text-primary);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 2rem 1.5rem;
+            box-sizing: border-box;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 520px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--card-border);
+            padding: 3rem 2.5rem;
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            box-sizing: border-box;
+            position: relative;
+            overflow: hidden;
+            text-align: left;
+        }
+
+        /* Subtle glowing card accent */
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #6366f1, #8b5cf6, #ec4899);
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 1.25rem;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0;
+            letter-spacing: -0.025em;
+            background: linear-gradient(to right, #a5b4fc, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.5;
+            font-weight: 300;
+            margin: 0 0 1.5rem;
+        }
+
+        label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .input-group {
+            margin-bottom: 1.25rem;
+        }
+
+        input[type="text"], input[type="email"], textarea {
+            width: 100%;
+            padding: 0.85rem 1rem;
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            color: white;
+            font-family: inherit;
+            font-size: 0.95rem;
+            box-sizing: border-box;
+            transition: all 0.2s;
+        }
+
+        input[type="text"]:focus, input[type="email"]:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px var(--primary-glow);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        .btn-submit {
+            width: 100%;
+            background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            box-shadow: 0 4px 12px var(--primary-glow);
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(139, 92, 246, 0.4);
+        }
+
+        .btn-submit:active {
+            transform: translateY(1px);
+        }
+
+        .btn-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            color: var(--text-primary);
+            padding: 0.5rem 1rem;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-back:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Success Message Overlay */
+        .success-box {
+            display: none;
+            background: var(--success-bg);
+            border: 1px solid var(--success-border);
+            color: var(--success-text);
+            padding: 1.25rem;
+            border-radius: 14px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .fallback-mailto {
+            text-align: center;
+            margin-top: 1.5rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .fallback-mailto a {
+            color: #a5b4fc;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .fallback-mailto a:hover {
+            text-decoration: underline;
+        }
+
+        .footer-note {
+            text-align: center;
+            margin-top: 2rem;
+            font-size: 0.85rem;
+            color: rgba(156, 163, 175, 0.4);
+        }
+
+        .icon {
+            width: 20px;
+            height: 20px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="header">
+                <h1>
+                    <svg class="icon" viewBox="0 0 24 24" style="color: #c084fc; width: 24px; height: 24px;">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    Support Request
+                </h1>
+                <a href="/" class="btn-back">
+                    <svg class="icon" viewBox="0 0 24 24" style="width: 14px; height: 14px;">
+                        <path d="M19 12H5"/>
+                        <path d="M12 19L5 12L12 5"/>
+                    </svg>
+                    Back
+                </a>
+            </div>
+
+            <div id="successBox" class="success-box">
+                <b>Thank you!</b> Your support request has been submitted. We will review your message and get back to you as soon as possible.
+            </div>
+
+            <form id="supportForm" onsubmit="submitSupport(event)">
+                <p>Have questions, encountered a bug, or want to suggest feedback? Submit the form below, and JLC Support will receive it.</p>
+
+                <div class="input-group">
+                    <label for="supportName">Your Name</label>
+                    <input type="text" id="supportName" required placeholder="e.g. Johnny Lehane">
+                </div>
+
+                <div class="input-group">
+                    <label for="supportEmail">Your Email</label>
+                    <input type="email" id="supportEmail" required placeholder="e.g. hello@johnnylehane.com">
+                </div>
+
+                <div class="input-group">
+                    <label for="supportSubject">Subject</label>
+                    <input type="text" id="supportSubject" required placeholder="How can we help?">
+                </div>
+
+                <div class="input-group">
+                    <label for="supportMessage">Message</label>
+                    <textarea id="supportMessage" required placeholder="Please describe your issue or question in detail..."></textarea>
+                </div>
+
+                <button type="submit" class="btn-submit" id="btnSubmit">
+                    <span>Send Support Request</span>
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <line x1="22" y1="2" x2="11" y2="13"/>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                    </svg>
+                </button>
+            </form>
+
+            <div class="fallback-mailto">
+                Or email us directly at: <br>
+                <a href="mailto:quickbeam+hello@johnnylehane.com?subject=Quickbeam%20Support">quickbeam+hello@johnnylehane.com</a>
+            </div>
+        </div>
+        
+        <div class="footer-note">
+            &copy; 2026 JLC. All rights reserved.
+        </div>
+    </div>
+
+    <script>
+        async function submitSupport(event) {
+            event.preventDefault();
+            const btn = document.getElementById('btnSubmit');
+            const form = document.getElementById('supportForm');
+            const successBox = document.getElementById('successBox');
+            
+            const name = document.getElementById('supportName').value.trim();
+            const email = document.getElementById('supportEmail').value.trim();
+            const subject = document.getElementById('supportSubject').value.trim();
+            const message = document.getElementById('supportMessage').value.trim();
+
+            btn.disabled = true;
+            btn.querySelector('span').innerText = 'Sending...';
+
+            try {
+                const res = await fetch('/api/support', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, subject, message })
+                });
+                
+                const data = await res.json();
+                
+                if (res.ok) {
+                    successBox.style.display = 'block';
+                    form.reset();
+                    // Smoothly scroll to the success box
+                    successBox.scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    alert("Error: " + (data.error || "Failed to submit request."));
+                }
+            } catch (e) {
+                // If endpoint fails, fallback to opening mail client
+                alert("Form submit failed. Opening your local email client instead...");
+                const mailUrl = `mailto:quickbeam+hello@johnnylehane.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent("From: " + name + " <" + email + ">\n\n" + message)}`;
+                window.location.href = mailUrl;
+            } finally {
+                btn.disabled = false;
+                btn.querySelector('span').innerText = 'Send Support Request';
+            }
+        }
+    </script>
+</body>
+</html>

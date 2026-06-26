@@ -34,3 +34,8 @@ Thumbs.db
 # Roku build artifacts
 out/
 *.zip
+
+# Local context/instruction files
+packaing-instructions.txt
+roku-mcp.txt
+

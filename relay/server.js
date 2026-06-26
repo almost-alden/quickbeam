@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const crypto = require('crypto');
 const { registerDevice, getDevicesByPublicIp, findDeviceByPairingCode } = require('./registry');
-const { parseUrl } = require('./deeplink');
+const { parseUrl, scrapeTitle } = require('./deeplink');
 
 const app = express();
 app.use(cors());
@@ -47,13 +47,18 @@ app.get('/api/status', (req, res) => {
     });
 });
 
-// 2. Create Magic Link (from Sender)
-app.post('/api/create', (req, res) => {
-    const { url, senderName, pairingCode, videoTitle } = req.body;
+app.post('/api/create', async (req, res) => {
+    const { url, senderName, pairingCode } = req.body;
+    let { videoTitle } = req.body;
     const parsed = parseUrl(url);
     
     if (!parsed) {
         return res.status(400).json({ error: 'URL not supported yet' });
+    }
+
+    // Auto-scrape title from source if not provided manually
+    if (!videoTitle) {
+        videoTitle = await scrapeTitle(url);
     }
 
     const linkId = crypto.randomUUID().substring(0, 8);
@@ -101,6 +106,28 @@ app.get('/api/resolve-code/:pairingCode', (req, res) => {
             deviceName: device.deviceName
         }
     });
+});
+
+// Serve clean URLs for static pages
+app.get('/about', (req, res) => {
+    res.sendFile(__dirname + '/public/about.html');
+});
+
+app.get('/support', (req, res) => {
+    res.sendFile(__dirname + '/public/support.html');
+});
+
+// Support form API
+app.post('/api/support', (req, res) => {
+    const { name, email, subject, message } = req.body;
+    console.log(`========================================`);
+    console.log(`[SUPPORT EMAIL TICKET]`);
+    console.log(`To: quickbeam+hello@johnnylehane.com`);
+    console.log(`From: ${name} <${email}>`);
+    console.log(`Subject: ${subject}`);
+    console.log(`Message:\n${message}`);
+    console.log(`========================================`);
+    res.json({ status: 'ok', message: 'Your support ticket has been received.' });
 });
 
 // Periodically clean up expired magic links every hour

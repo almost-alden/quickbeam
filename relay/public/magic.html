@@ -462,6 +462,8 @@
                 <!-- Filled dynamically with device list -->
             </div>
 
+            <div id="restoreContainer" style="margin-bottom: 1rem; text-align: center;"></div>
+
             <div class="add-device-form" style="border-top: none; padding-top: 0; margin-top: 0; margin-bottom: 1.5rem;">
                 <button class="form-btn" id="scanBtn" onclick="runSubnetScan()" style="background: linear-gradient(135deg, #3b82f6, #2563eb); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">
                     🔍 Scan Wi-Fi for TVs
@@ -498,8 +500,10 @@
         </div>
     </div>
 
-    <div class="footer-links" style="margin-top: 1.5rem; text-align: center; font-size: 0.8rem; color: var(--text-secondary);">
-        <a href="/privacy.html" style="color: var(--text-secondary); text-decoration: none; margin-right: 1rem; transition: color 0.2s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-secondary)'">Privacy Policy</a>
+    <div class="footer-links" style="margin-top: 1.5rem; text-align: center; font-size: 0.8rem; color: var(--text-secondary); display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+        <a href="/about" style="color: var(--text-secondary); text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-secondary)'">About &amp; Manual</a>
+        <a href="/support" style="color: var(--text-secondary); text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-secondary)'">Support</a>
+        <a href="/privacy.html" style="color: var(--text-secondary); text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-secondary)'">Privacy Policy</a>
         <a href="/terms.html" style="color: var(--text-secondary); text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-secondary)'">Terms of Use</a>
     </div>
 
@@ -587,6 +591,7 @@
         // Initialize device selector and retrieve active choice
         async function initDeviceSelection() {
             const manualDevices = getManualDevices();
+            const ignored = getIgnoredDevices();
             
             // Render device list into selector panel
             renderDeviceList(manualDevices);
@@ -601,9 +606,9 @@
                 if (success) return;
             }
 
-            // 2. Check if there's a saved active device IP in localStorage
+            // 2. Check if there's a saved active device IP in localStorage (not ignored)
             const savedActiveIp = localStorage.getItem('quickbeam_active_device_ip');
-            if (savedActiveIp) {
+            if (savedActiveIp && !ignored.includes(savedActiveIp)) {
                 // Find matching device details in manual or auto list
                 const found = manualDevices.find(d => d.ip === savedActiveIp) || 
                               autoDetectedDevices.find(d => d.localIp === savedActiveIp);
@@ -614,16 +619,18 @@
                 }
             }
 
-            // 3. Fallback: Check if we have auto-detected devices and pick the first
-            if (autoDetectedDevices.length > 0) {
-                const firstAuto = autoDetectedDevices[0];
+            // 3. Fallback: Check if we have auto-detected devices (not ignored) and pick the first
+            const visibleAuto = autoDetectedDevices.filter(d => !ignored.includes(d.localIp));
+            if (visibleAuto.length > 0) {
+                const firstAuto = visibleAuto[0];
                 selectDevice(firstAuto.localIp, firstAuto.deviceName);
                 return;
             }
 
-            // 4. Fallback: Check if we have any manual devices and pick the first
-            if (manualDevices.length > 0) {
-                const firstManual = manualDevices[0];
+            // 4. Fallback: Check if we have manual devices (not ignored) and pick the first
+            const visibleManual = manualDevices.filter(d => !ignored.includes(d.ip));
+            if (visibleManual.length > 0) {
+                const firstManual = visibleManual[0];
                 selectDevice(firstManual.ip, firstManual.name);
                 return;
             }
@@ -644,24 +651,40 @@
             localStorage.setItem('quickbeam_manual_devices', JSON.stringify(devices));
         }
 
+        function getIgnoredDevices() {
+            try {
+                return JSON.parse(localStorage.getItem('quickbeam_ignored_devices')) || [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function saveIgnoredDevices(ips) {
+            localStorage.setItem('quickbeam_ignored_devices', JSON.stringify(ips));
+        }
+
         // Render device list items
         function renderDeviceList(manualDevices) {
             const container = document.getElementById('deviceListContainer');
             container.innerHTML = '';
+            
+            const ignored = getIgnoredDevices();
 
-            // Add auto-detected devices
-            autoDetectedDevices.forEach(d => {
-                const item = createDeviceListItem(d.localIp, d.deviceName, 'auto', false);
+            // Add auto-detected devices (filtered by ignored list)
+            const visibleAuto = autoDetectedDevices.filter(d => !ignored.includes(d.localIp));
+            visibleAuto.forEach(d => {
+                const item = createDeviceListItem(d.localIp, d.deviceName, 'auto', true);
                 container.appendChild(item);
             });
 
-            // Add manual devices
-            manualDevices.forEach(d => {
+            // Add manual devices (filtered by ignored list)
+            const visibleManual = manualDevices.filter(d => !ignored.includes(d.ip));
+            visibleManual.forEach(d => {
                 const item = createDeviceListItem(d.ip, d.name, 'manual', true);
                 container.appendChild(item);
             });
 
-            if (autoDetectedDevices.length === 0 && manualDevices.length === 0) {
+            if (visibleAuto.length === 0 && visibleManual.length === 0) {
                 const emptyMsg = document.createElement('div');
                 emptyMsg.style.fontSize = '0.85rem';
                 emptyMsg.style.color = 'var(--text-secondary)';
@@ -669,6 +692,20 @@
                 emptyMsg.style.padding = '1rem 0';
                 emptyMsg.innerText = 'No TVs added yet.';
                 container.appendChild(emptyMsg);
+            }
+
+            // Show/hide "Restore Hidden TVs" button
+            const restoreContainer = document.getElementById('restoreContainer');
+            if (restoreContainer) {
+                if (ignored.length > 0) {
+                    restoreContainer.innerHTML = `
+                        <button class="switch-btn" onclick="restoreHiddenDevices()" style="width: 100%; justify-content: center; display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(255, 255, 255, 0.02); border-color: rgba(255, 255, 255, 0.05); color: var(--text-secondary); padding: 0.6rem 1rem; font-size: 0.8rem; border-radius: 10px;">
+                            <span>Restore Hidden/Deleted TVs</span>
+                        </button>
+                    `;
+                } else {
+                    restoreContainer.innerHTML = '';
+                }
             }
         }
 
@@ -708,7 +745,7 @@
                 delBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>';
                 delBtn.onclick = (e) => {
                     e.stopPropagation();
-                    deleteManualDevice(ip);
+                    deleteDevice(ip, type);
                 };
                 badgeRow.appendChild(delBtn);
             }
@@ -749,17 +786,6 @@
             document.getElementById('device-manager-panel').style.display = 'block';
         }
 
-        function toggleDeviceManager() {
-            const panel = document.getElementById('device-manager-panel');
-            const isHidden = panel.style.display === 'none';
-            panel.style.display = isHidden ? 'block' : 'none';
-            
-            if (isHidden) {
-                // Refresh list display
-                renderDeviceList(getManualDevices());
-            }
-        }
-
         // Add manual device
         function addManualDevice() {
             const nameInput = document.getElementById('manualDeviceName').value.trim() || 'Roku TV';
@@ -790,19 +816,45 @@
             selectDevice(ipInput, nameInput);
         }
 
-        // Delete manual device
-        function deleteManualDevice(ip) {
-            let manualDevices = getManualDevices();
-            manualDevices = manualDevices.filter(d => d.ip !== ip);
-            saveManualDevices(manualDevices);
+        // Hide/Delete device
+        function deleteDevice(ip, type) {
+            if (!confirm(`Are you sure you want to hide/delete this TV (${ip})?`)) return;
+            
+            const ignored = getIgnoredDevices();
+            if (!ignored.includes(ip)) {
+                ignored.push(ip);
+                saveIgnoredDevices(ignored);
+            }
+
+            if (type === 'manual') {
+                let manualDevices = getManualDevices();
+                manualDevices = manualDevices.filter(d => d.ip !== ip);
+                saveManualDevices(manualDevices);
+            }
 
             // If active device was deleted, reset selection
             if (activeDevice && activeDevice.ip === ip) {
                 localStorage.removeItem('quickbeam_active_device_ip');
                 activeDevice = null;
-                initDeviceSelection();
-            } else {
-                renderDeviceList(manualDevices);
+            }
+
+            initDeviceSelection();
+        }
+
+        // Restore ignored/hidden devices
+        function restoreHiddenDevices() {
+            localStorage.removeItem('quickbeam_ignored_devices');
+            initDeviceSelection();
+        }
+
+        function toggleDeviceManager() {
+            const panel = document.getElementById('device-manager-panel');
+            const isHidden = panel.style.display === 'none';
+            panel.style.display = isHidden ? 'block' : 'none';
+            
+            if (isHidden) {
+                // Refresh list display
+                renderDeviceList(getManualDevices());
             }
         }
 

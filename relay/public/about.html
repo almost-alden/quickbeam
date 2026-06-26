@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quickbeam | Learn More & User Manual</title>
+    <!-- PWA & Mobile Optimization -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#8b5cf6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="/images/icon-512.jpg">
+    
+    <!-- Modern typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: rgba(20, 26, 45, 0.6);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --primary: #8b5cf6;
+            --primary-hover: #7c3aed;
+            --primary-glow: rgba(139, 92, 246, 0.3);
+            --accent: #6366f1;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.15) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: var(--text-primary);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 2rem 1.5rem;
+            box-sizing: border-box;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--card-border);
+            padding: 3rem;
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            box-sizing: border-box;
+            position: relative;
+            overflow: hidden;
+            text-align: left;
+        }
+
+        /* Subtle glowing card accent */
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #6366f1, #8b5cf6, #ec4899);
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2.5rem;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 1.5rem;
+        }
+
+        h1 {
+            font-size: 2.25rem;
+            font-weight: 700;
+            margin: 0;
+            letter-spacing: -0.025em;
+            background: linear-gradient(to right, #a5b4fc, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        h2 {
+            font-size: 1.35rem;
+            font-weight: 600;
+            color: #c084fc;
+            margin-top: 2.5rem;
+            margin-bottom: 0.75rem;
+            letter-spacing: -0.01em;
+        }
+
+        p, li {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            line-height: 1.6;
+            font-weight: 300;
+        }
+
+        p {
+            margin: 0 0 1.25rem;
+        }
+
+        ul, ol {
+            margin: 0 0 1.5rem;
+            padding-left: 1.5rem;
+        }
+
+        li {
+            margin-bottom: 0.75rem;
+        }
+
+        .highlight {
+            color: var(--text-primary);
+            font-weight: 400;
+        }
+
+        .btn-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            color: var(--text-primary);
+            padding: 0.6rem 1.2rem;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-back:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .step-badge {
+            background: rgba(139, 92, 246, 0.15);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            color: #c084fc;
+            padding: 0.15rem 0.5rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin-right: 0.5rem;
+        }
+
+        .footer-links {
+            margin-top: 1.5rem;
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .footer-links a:hover {
+            color: var(--primary);
+        }
+
+        .footer-note {
+            text-align: center;
+            margin-top: 2rem;
+            font-size: 0.85rem;
+            color: rgba(156, 163, 175, 0.4);
+        }
+
+        .icon {
+            width: 24px;
+            height: 24px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        @media (max-width: 640px) {
+            .card {
+                padding: 1.75rem;
+            }
+            h1 {
+                font-size: 1.75rem;
+            }
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="header">
+                <h1>
+                    <svg class="icon" viewBox="0 0 24 24" style="color: #c084fc; width: 28px; height: 28px;">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="16" x2="12" y2="12"/>
+                        <line x1="12" y1="8" x2="12.01" y2="8"/>
+                    </svg>
+                    About Quickbeam
+                </h1>
+                <a href="/" class="btn-back">
+                    <svg class="icon" viewBox="0 0 24 24" style="width: 16px; height: 16px;">
+                        <path d="M19 12H5"/>
+                        <path d="M12 19L5 12L12 5"/>
+                    </svg>
+                    Back to Dashboard
+                </a>
+            </div>
+
+            <p>Welcome to <span class="highlight">Quickbeam</span>, a lightweight, privacy-focused Roku casting utility. Quickbeam was built by JLC to bridge the gap between media streams on your mobile devices and the big screen, without the friction of platform accounts, logins, or trackers.</p>
+
+            <h2>🌟 What is Quickbeam?</h2>
+            <p>Quickbeam is a <b>social cast engine</b>. It allows you to package any supported media link (from YouTube, Netflix, Amazon Prime, and web streams) into a randomized, short-lived "Magic Link" and send it to friends or family members. When they open that link, it directly wakes up and plays that video on their physical Roku TV.</p>
+
+            <h2>📖 Complete User Manual</h2>
+            <p>Follow these simple instructions to set up and get started casting:</p>
+            
+            <ol>
+                <li>
+                    <span class="step-badge">Step 1</span> <span class="highlight">Install the Roku Channel app</span>:
+                    <br>Make sure the Quickbeam channel app is sideloaded or installed on the target Roku TV. Open it to find a unique 6-digit TV pairing code displayed on the screen.
+                </li>
+                <li>
+                    <span class="step-badge">Step 2</span> <span class="highlight">Create your Contacts list</span>:
+                    <br>On the phone dashboard, click **Add Contact**. Enter their Name, their 6-digit Roku TV Code, and optionally their Phone Number or Email. 
+                    <ul>
+                        <li><b>Roku TV Code:</b> Saves pairing settings locally so their TV receives direct ECP commands.</li>
+                        <li><b>Phone/Email:</b> Enables one-tap delivery. Tapping their contact button will directly launch your Messages (SMS) or Mail client pre-addressed to them with the Magic Link filled out.</li>
+                    </ul>
+                </li>
+                <li>
+                    <span class="step-badge">Step 3</span> <span class="highlight">Share & Cast</span>:
+                    <br>Paste a media URL, select a contact, and send! When they open the Magic Link on their phone (on the same Wi-Fi subnet as the TV), it launches the video on their Roku.
+                </li>
+            </ol>
+
+            <h2>⚙️ Under the Hood: Wi-Fi Subnets</h2>
+            <p>Roku devices accept commands using Roku's External Control Protocol (ECP) over your local home network (Wi-Fi). To play a video:</p>
+            <ul>
+                <li>The receiver opening the Magic Link must be on the **same Wi-Fi network subnet** as the Roku TV.</li>
+                <li>The server handles the coordination ephemerally in-memory (it matches the devices based on their public IP).</li>
+                <li>If the recipient sees a "TV Connection Required" status, verify that their phone is connected to their home Wi-Fi network (not mobile cellular data) to locate the local TV.</li>
+            </ul>
+
+            <h2>🔒 Privacy & Expiration Policies</h2>
+            <p>Our server is entirely serverless and operates exclusively in-RAM. We have no databases and sell no data:</p>
+            <ul>
+                <li><b>Device Registrations:</b> Expire and delete from server RAM after <b>1 hour</b> of inactivity.</li>
+                <li><b>Magic Links:</b> Expire and are permanently deleted after <b>24 hours</b>.</li>
+                <li><b>Contacts Directory:</b> Stored entirely in your browser's device-only memory (<code class="highlight">localStorage</code>).</li>
+            </ul>
+        </div>
+
+        <div class="footer-links">
+            <a href="/support">Support Form</a>
+            <a href="/privacy.html">Privacy Policy</a>
+            <a href="/terms.html">Terms of Use</a>
+        </div>
+        
+        <div class="footer-note">
+            &copy; 2026 JLC. All rights reserved.
+        </div>
+    </div>
+</body>
+</html>
