@@ -2,12 +2,16 @@
 # Quickbeam Roku App Packager
 # Zips all SceneGraph source, layout components, images, and manifest.
 
-echo "⚡️ Packaging Quickbeam Roku App..."
+TARGET=${1:-prod}
+ZIP_NAME="quickbeam-${TARGET}.zip"
+
+echo "⚡️ Packaging Quickbeam Roku App for TARGET: ${TARGET}..."
 
 # Create output directory
 mkdir -p out
 
 # Ensure we clean up any old build
+rm -f out/$ZIP_NAME
 rm -f out/quickbeam.zip
 
 # Verify directories exist
@@ -21,11 +25,30 @@ if [ ! -d source ] || [ ! -d components ] || [ ! -d images ]; then
     exit 1
 fi
 
-# Package channel
-zip -r out/quickbeam.zip manifest source/ components/ images/
+# Backup config files before temporary injection
+cp source/main.brs main.brs.bak
+cp manifest manifest.bak
 
-if [ $? -eq 0 ]; then
-    echo "✅ Packaging successful: out/quickbeam.zip is ready for Roku Developer deployment!"
+# Adjust endpoint and channel title based on target
+if [ "$TARGET" = "beta" ]; then
+    sed -i 's|globalAA.relayUrl = ".*"|globalAA.relayUrl = "https://beta.quickbeam.johnnylehane.com"|g' source/main.brs
+    sed -i 's|title=.*|title=Quickbeam Beta|g' manifest
+else
+    sed -i 's|globalAA.relayUrl = ".*"|globalAA.relayUrl = "https://quickbeam.johnnylehane.com"|g' source/main.brs
+    sed -i 's|title=.*|title=Quickbeam|g' manifest
+fi
+
+# Package channel
+zip -r out/$ZIP_NAME manifest source/ components/ images/
+ZIP_STATUS=$?
+
+# Restore backups
+mv main.brs.bak source/main.brs
+mv manifest.bak manifest
+
+if [ $ZIP_STATUS -eq 0 ]; then
+    cp out/$ZIP_NAME out/quickbeam.zip
+    echo "✅ Packaging successful: out/$ZIP_NAME is ready for Roku Developer deployment!"
 else
     echo "❌ Packaging failed!"
     exit 1
