@@ -591,10 +591,20 @@
             <div id="contacts-container" class="contacts-grid">
                 <!-- Rendered dynamically -->
             </div>
-            <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; align-items: center;">
-                <input type="text" id="newContactName" placeholder="Name (e.g. Mom)" style="padding: 0.6rem 0.8rem; font-size: 0.85rem; flex-grow: 1;">
-                <input type="text" id="newContactCode" placeholder="TV Code (Optional)" style="padding: 0.6rem 0.8rem; font-size: 0.85rem; width: 120px;">
-                <button class="copy-btn" onclick="saveContact()" style="padding: 0.6rem 1rem; font-size: 0.85rem; height: 38px;">+ Add</button>
+            
+            <div class="add-contact-form" style="border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 1rem; margin-top: 0.5rem; text-align: left;">
+                <label style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.5rem; display: block; font-weight: 500;">Add New Contact</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem;">
+                    <input type="text" id="newContactName" placeholder="Name (e.g. Mom)" style="padding: 0.6rem 0.8rem; font-size: 0.85rem; width: 100%; box-sizing: border-box;">
+                    <input type="text" id="newContactCode" placeholder="TV Code (6 digits)" style="padding: 0.6rem 0.8rem; font-size: 0.85rem; width: 100%; box-sizing: border-box;">
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem;">
+                    <input type="text" id="newContactPhone" placeholder="Phone (SMS/WhatsApp)" style="padding: 0.6rem 0.8rem; font-size: 0.85rem; width: 100%; box-sizing: border-box;">
+                    <input type="text" id="newContactEmail" placeholder="Email Address" style="padding: 0.6rem 0.8rem; font-size: 0.85rem; width: 100%; box-sizing: border-box;">
+                </div>
+                <button class="btn-primary" onclick="saveContact()" style="padding: 0.65rem; font-size: 0.85rem; height: auto; margin-top: 0.25rem;">
+                    <span>+ Add Contact</span>
+                </button>
             </div>
         </div>
 
@@ -624,15 +634,15 @@
             
             <div class="step-item">
                 <div class="step-number">1</div>
-                <p class="step-text"><b>Enter details</b>: Type your name and paste a video URL (like YouTube or Netflix).</p>
+                <p class="step-text"><b>Get the Roku App</b>: Install and open the Quickbeam channel on the Roku TV. It will display a 6-digit pairing code on the screen.</p>
             </div>
             <div class="step-item">
                 <div class="step-number">2</div>
-                <p class="step-text"><b>Create Link</b>: Click "Create Magic Link", or add a recipient to your directory for one-tap sharing.</p>
+                <p class="step-text"><b>Add Contact & Pair</b>: Under "Quick Send", add your contact's name and their 6-digit TV pairing code. You can also save their phone or email for direct delivery.</p>
             </div>
             <div class="step-item">
                 <div class="step-number">3</div>
-                <p class="step-text"><b>Send & Play</b>: Share the generated link with your friend. When they open it, the video will automatically play on their TV screen!</p>
+                <p class="step-text"><b>Cast Instantly</b>: Paste a video URL, tap their contact card, and send it! Opening the link instantly launches the video on their TV.</p>
             </div>
 
             <button class="modal-btn" onclick="closeModal()">Got it, let's cast!</button>
@@ -765,8 +775,13 @@
         function saveContact() {
             const nameInput = document.getElementById('newContactName');
             const codeInput = document.getElementById('newContactCode');
+            const phoneInput = document.getElementById('newContactPhone');
+            const emailInput = document.getElementById('newContactEmail');
+
             const name = nameInput.value.trim();
             const code = codeInput.value.trim().replace(/\s+/g, '');
+            const phone = phoneInput.value.trim().replace(/\s+/g, '');
+            const email = emailInput.value.trim();
 
             if (!name) return alert("Please enter a contact name.");
 
@@ -776,11 +791,13 @@
                 return alert("A contact with this name already exists.");
             }
 
-            contacts.push({ name, code });
+            contacts.push({ name, code, phone, email });
             saveContactsList(contacts);
 
             nameInput.value = '';
             codeInput.value = '';
+            phoneInput.value = '';
+            emailInput.value = '';
             renderContacts();
         }
 
@@ -818,14 +835,33 @@
                 nameSpan.style.width = '100%';
                 btn.appendChild(nameSpan);
 
-                // Code indicator if pre-paired
+                // Badges container
+                const badgesDiv = document.createElement('div');
+                badgesDiv.style.display = 'flex';
+                badgesDiv.style.gap = '0.35rem';
+                badgesDiv.style.marginTop = '0.2rem';
+                badgesDiv.style.fontSize = '0.7rem';
+                badgesDiv.style.color = 'var(--text-secondary)';
+
                 if (contact.code) {
-                    const codeLabel = document.createElement('span');
-                    codeLabel.innerText = "Code: " + contact.code;
-                    codeLabel.style.fontSize = '0.65rem';
-                    codeLabel.style.color = 'var(--text-secondary)';
-                    btn.appendChild(codeLabel);
+                    const b = document.createElement('span');
+                    b.innerText = '📺';
+                    b.title = 'Pairing Code: ' + contact.code;
+                    badgesDiv.appendChild(b);
                 }
+                if (contact.phone) {
+                    const b = document.createElement('span');
+                    b.innerText = '📞';
+                    b.title = 'Phone: ' + contact.phone;
+                    badgesDiv.appendChild(b);
+                }
+                if (contact.email) {
+                    const b = document.createElement('span');
+                    b.innerText = '✉️';
+                    b.title = 'Email: ' + contact.email;
+                    badgesDiv.appendChild(b);
+                }
+                btn.appendChild(badgesDiv);
 
                 // Delete button
                 const delBtn = document.createElement('button');
@@ -860,8 +896,25 @@
                     document.getElementById('result').style.display = 'block';
                     document.getElementById('outputLink').innerText = data.relayUrl;
                     
-                    // Trigger web sharing if supported
-                    if (navigator.share) {
+                    // Copy link to clipboard in background
+                    try {
+                        await navigator.clipboard.writeText(data.relayUrl);
+                    } catch (err) {
+                        console.log('Clipboard write failed', err);
+                    }
+
+                    // Direct messaging routing based on details
+                    if (contact.phone) {
+                        const smsBody = `${senderName || 'Your friend'} sent you a video link! Open this to cast it onto your TV: ${data.relayUrl}`;
+                        const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+                        const smsUrl = `sms:${contact.phone}${isiOS ? '&' : '?'}body=${encodeURIComponent(smsBody)}`;
+                        window.location.href = smsUrl;
+                    } else if (contact.email) {
+                        const emailSubject = 'Quickbeam Cast ⚡️';
+                        const emailBody = `${senderName || 'Your friend'} sent you a video link! Open this to cast it onto your TV: ${data.relayUrl}`;
+                        const mailUrl = `mailto:${contact.email}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+                        window.location.href = mailUrl;
+                    } else if (navigator.share) {
                         try {
                             await navigator.share({
                                 title: 'Quickbeam Link ⚡️',
@@ -872,7 +925,6 @@
                             console.log('User dismissed share dialog', err);
                         }
                     } else {
-                        await navigator.clipboard.writeText(data.relayUrl);
                         alert(`Magic Link generated and copied to clipboard!\nSend it to ${contact.name}:\n${data.relayUrl}`);
                     }
                 } else {
