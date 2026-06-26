@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quickbeam | Terms of Use</title>
+    <!-- PWA & Mobile Optimization -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#8b5cf6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link class="apple-touch-icon" href="/images/icon-512.jpg">
+    
+    <!-- Modern typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: rgba(20, 26, 45, 0.6);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --primary: #8b5cf6;
+            --primary-hover: #7c3aed;
+            --primary-glow: rgba(139, 92, 246, 0.3);
+            --accent: #6366f1;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.15) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: var(--text-primary);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            padding: 2rem 1.5rem;
+            box-sizing: border-box;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--card-border);
+            padding: 3rem;
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            box-sizing: border-box;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Subtle glowing card accent */
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #6366f1, #8b5cf6, #ec4899);
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2.5rem;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 1.5rem;
+        }
+
+        h1 {
+            font-size: 2.25rem;
+            font-weight: 700;
+            margin: 0;
+            letter-spacing: -0.025em;
+            background: linear-gradient(to right, #a5b4fc, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        h2 {
+            font-size: 1.35rem;
+            font-weight: 600;
+            color: #c084fc;
+            margin-top: 2rem;
+            margin-bottom: 0.75rem;
+            letter-spacing: -0.01em;
+        }
+
+        p, li {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            line-height: 1.6;
+            font-weight: 300;
+        }
+
+        p {
+            margin: 0 0 1.25rem;
+        }
+
+        ul {
+            margin: 0 0 1.5rem;
+            padding-left: 1.5rem;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        .highlight {
+            color: var(--text-primary);
+            font-weight: 400;
+        }
+
+        .btn-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            color: var(--text-primary);
+            padding: 0.6rem 1.2rem;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-back:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .footer-note {
+            text-align: center;
+            margin-top: 2rem;
+            font-size: 0.85rem;
+            color: rgba(156, 163, 175, 0.5);
+        }
+
+        /* SVG Icon styling */
+        .icon {
+            width: 24px;
+            height: 24px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        @media (max-width: 640px) {
+            .card {
+                padding: 1.75rem;
+            }
+            h1 {
+                font-size: 1.75rem;
+            }
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="header">
+                <h1>
+                    <svg class="icon" viewBox="0 0 24 24" style="color: #c084fc;">
+                        <path d="M14 2H6A2 2 0 0 0 4 4V20A2 2 0 0 0 6 22H18A2 2 0 0 0 20 20V8L14 2Z"/>
+                        <path d="M14 3V8H19"/>
+                        <path d="M16 13H8"/>
+                        <path d="M16 17H8"/>
+                        <path d="M10 9H8"/>
+                    </svg>
+                    Terms of Use
+                </h1>
+                <a href="/" class="btn-back">
+                    <svg class="icon" viewBox="0 0 24 24" style="width: 16px; height: 16px;">
+                        <path d="M19 12H5"/>
+                        <path d="M12 19L5 12L12 5"/>
+                    </svg>
+                    Back to Home
+                </a>
+            </div>
+
+            <p>Last Updated: June 25, 2026</p>
+
+            <p>Welcome to <span class="highlight">Quickbeam</span>. By accessing the Quickbeam web application located at <span class="highlight">https://quickbeam.johnnylehane.com</span> (including subdomains or relay mirrors) and/or installing the Quickbeam Roku Channel app (collectively, the "Services"), you agree to be bound by these Terms of Use ("Terms"). The Services are provided by JLC ("we", "our", or "us").</p>
+            
+            <p>If you do not agree to all of these Terms, do not access or use the Services.</p>
+
+            <h2>1. Service Description</h2>
+            <p>Quickbeam is a remote controller bridge designed to facilitate launching applications and video URLs onto Roku devices on your local network. The service utilizes Roku's External Control Protocol (ECP) over a local Wi-Fi connection paired with an ephemeral remote relay server.</p>
+
+            <h2>2. Acceptable Use Policy</h2>
+            <p>By using the Services, you agree not to use the Services to:</p>
+            <ul>
+                <li>Harass, abuse, or send unwanted casting requests/links to third parties.</li>
+                <li>Attempt to bypass, disable, or interfere with security features of the Services.</li>
+                <li>Conduct port scanning, network probing, or malicious request generation against the relay server or any Roku device.</li>
+                <li>Transmit or share links containing malware, viruses, or illegal materials.</li>
+            </ul>
+
+            <h2>3. Intellectual Property</h2>
+            <p>The code, layouts, logos, designs, and content of the Services (excluding the official trademarks of third parties like Roku, YouTube, or Netflix) are the intellectual property of JLC or are licensed for our use. Quickbeam is made available as an open-source/hobby tool under the MIT license, subject to the conditions of that license.</p>
+
+            <h2>4. Disclaimers ("As-Is" and "As-Available")</h2>
+            <p>THE SERVICES ARE PROVIDED ON AN "AS IS" AND "AS AVAILABLE" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. WE DO NOT WARRANT THAT THE SERVICES WILL BE SECURE, UNINTERRUPTED, OR FREE OF ERRORS OR BUG FREE.</p>
+
+            <h2>5. Limitation of Liability</h2>
+            <p>TO THE MAXIMUM EXTENT PERMITTED BY LAW, IN NO EVENT SHALL JLC, ITS DEVELOPERS, OR ITS ASSOCIATES BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS OF PROFITS OR REVENUE, WHETHER INCURRED DIRECTLY OR INDIRECTLY, OR ANY LOSS OF DATA, USE, GOODWILL, OR OTHER INTANGIBLE LOSSES, ARISING OUT OF YOUR USE OF THE SERVICES.</p>
+
+            <h2>6. Changes to the Services and Terms</h2>
+            <p>We reserve the right to modify, suspend, or terminate the Services or amend these Terms at any time without notice. Your continued use of the Services after modifications to the Terms indicates your acceptance of the updated Terms.</p>
+
+            <h2>7. Governing Law</h2>
+            <p>These Terms shall be governed by and construed in accordance with the laws of the State of New York, USA, without regard to its conflict of law principles.</p>
+
+            <h2>8. Contact Information</h2>
+            <p>For any questions or feedback regarding these Terms, please contact:</p>
+            <p><span class="highlight">Email:</span> <a href="mailto:hello@johnnylehane.com" style="color: #a5b4fc; text-decoration: none;">hello@johnnylehane.com</a></p>
+        </div>
+        <div class="footer-note">
+            &copy; 2026 JLC. All rights reserved.
+        </div>
+    </div>
+</body>
+</html>
