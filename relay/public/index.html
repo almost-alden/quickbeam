@@ -559,6 +559,112 @@
             color: var(--text-primary);
             background: rgba(255, 255, 255, 0.05);
         }
+
+        /* Device Manager styling inside index.html */
+        .device-manager {
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 18px;
+            padding: 1.25rem;
+            margin-top: 1.25rem;
+            text-align: left;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        .device-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            max-height: 150px;
+            overflow-y: auto;
+            margin-top: 0.75rem;
+            padding-right: 0.25rem;
+        }
+
+        .device-item {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 0.6rem 0.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .device-item:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .device-item.active {
+            background: rgba(139, 92, 246, 0.08);
+            border-color: rgba(139, 92, 246, 0.3);
+        }
+
+        .device-item-name {
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+
+        .device-item-ip {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-family: monospace;
+        }
+
+        .device-badge {
+            font-size: 0.65rem;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .device-badge.auto {
+            background: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+        }
+
+        .device-badge.manual {
+            background: rgba(139, 92, 246, 0.15);
+            color: #c084fc;
+        }
+
+        .delete-device-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 4px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .delete-device-btn:hover {
+            color: var(--error-text);
+            background: rgba(239, 68, 68, 0.1);
+        }
+        
+        .switch-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            padding: 0.4rem 0.6rem;
+            font-size: 0.7rem;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .switch-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
     </style>
 </head>
 <body>
@@ -629,6 +735,37 @@
         <div id="roku-status" class="status-badge loading" style="margin-top: 1.5rem; margin-bottom: 0; padding: 0.75rem; font-size: 0.8rem; line-height: 1.3;">
             <span class="ping-indicator"></span>
             <span>Checking Roku status...</span>
+        </div>
+
+        <div style="text-align: center; margin-top: 0.75rem;">
+            <a href="#" id="toggle-sender-pairing" style="font-size: 0.75rem; color: var(--text-secondary); text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-secondary)'" onclick="toggleSenderPairing(event)">🔍 Find or Add Roku TV</a>
+        </div>
+
+        <!-- Sender Device Manager Panel -->
+        <div id="sender-pairing-panel" class="device-manager" style="display:none; margin-top: 1.25rem;">
+            <div class="setup-desc" style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.75rem;">
+                Pair a Roku TV to automatically link generated streams to it.
+            </div>
+            
+            <div style="border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 0.75rem; margin-bottom: 0.75rem;">
+                <label style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 0.35rem; font-weight: 600; text-transform: uppercase;">Pair with 6-Digit TV Code</label>
+                <div style="display: grid; grid-template-columns: 1fr auto; gap: 0.5rem;">
+                    <input type="text" id="senderPairCode" placeholder="Enter code (e.g. 123456)" style="padding: 0.5rem 0.75rem; font-size: 0.85rem; width: 100%; box-sizing: border-box;">
+                    <button class="btn-primary" onclick="pairWithCode()" style="padding: 0.5rem 1rem; width: auto; font-size: 0.85rem; border-radius: 8px;">Pair</button>
+                </div>
+            </div>
+            
+            <div>
+                <label style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 0.35rem; font-weight: 600; text-transform: uppercase;">Add Manual TV IP</label>
+                <div style="display: grid; grid-template-columns: 1fr auto; gap: 0.5rem; margin-bottom: 0.5rem;">
+                    <input type="text" id="senderDeviceIp" placeholder="e.g. 192.168.1.50" style="padding: 0.5rem 0.75rem; font-size: 0.85rem; width: 100%; box-sizing: border-box;">
+                    <button class="btn-primary" onclick="addSenderManualDevice()" style="padding: 0.5rem 1rem; width: auto; font-size: 0.85rem; border-radius: 8px;">Add</button>
+                </div>
+            </div>
+            
+            <div class="device-list" id="senderDeviceListContainer" style="margin-top: 0.75rem;">
+                <!-- Paired device list filled dynamically -->
+            </div>
         </div>
     </div>
 
@@ -754,6 +891,7 @@
             const senderName = document.getElementById('senderName').value.trim();
             const url = document.getElementById('videoUrl').value.trim();
             const videoTitle = document.getElementById('videoTitle').value.trim();
+            const defaultPairingCode = getSenderDefaultPairingCode();
             
             if (!url) return alert("Please paste a URL");
 
@@ -767,7 +905,7 @@
                 const res = await fetch('/api/create', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url, senderName, videoTitle })
+                    body: JSON.stringify({ url, senderName, videoTitle, pairingCode: defaultPairingCode })
                 });
                 
                 const data = await res.json();
@@ -978,6 +1116,202 @@
                 }, 2000);
             } catch (e) {
                 alert("Failed to copy link: " + e);
+            }
+        }
+
+        // Default pairing code logic on sender dashboard
+        function getSenderManualDevices() {
+            try {
+                return JSON.parse(localStorage.getItem('quickbeam_sender_manual_devices')) || [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function saveSenderManualDevices(devices) {
+            localStorage.setItem('quickbeam_sender_manual_devices', JSON.stringify(devices));
+        }
+
+        function getSenderDefaultPairingCode() {
+            return localStorage.getItem('quickbeam_default_pairing_code') || '';
+        }
+
+        function saveSenderDefaultPairingCode(code) {
+            if (code) {
+                localStorage.setItem('quickbeam_default_pairing_code', code);
+            } else {
+                localStorage.removeItem('quickbeam_default_pairing_code');
+            }
+        }
+
+        function toggleSenderPairing(e) {
+            if (e) e.preventDefault();
+            const panel = document.getElementById('sender-pairing-panel');
+            const isHidden = panel.style.display === 'none';
+            panel.style.display = isHidden ? 'block' : 'none';
+            if (isHidden) {
+                renderSenderDevices();
+            }
+        }
+
+        async function pairWithCode() {
+            const codeInput = document.getElementById('senderPairCode');
+            const code = codeInput.value.trim().replace(/\s+/g, '');
+            if (!code || code.length < 5) return alert("Please enter a valid pairing code.");
+
+            try {
+                const res = await fetch(`/api/resolve-code/${code}`);
+                const data = await res.json();
+                if (data.status === 'paired' && data.device) {
+                    const dev = data.device;
+                    const devices = getSenderManualDevices();
+                    if (!devices.some(d => d.ip === dev.localIp)) {
+                        devices.push({ name: dev.deviceName, ip: dev.localIp, code: code });
+                        saveSenderManualDevices(devices);
+                    }
+                    saveSenderDefaultPairingCode(code);
+                    codeInput.value = '';
+                    renderSenderDevices();
+                    alert(`Successfully paired default TV: ${dev.deviceName}!`);
+                } else {
+                    alert("Failed to find TV: Code invalid or expired.");
+                }
+            } catch (e) {
+                alert("Error connecting to server to resolve code.");
+            }
+        }
+
+        function addSenderManualDevice() {
+            const ipInput = document.getElementById('senderDeviceIp');
+            const ip = ipInput.value.trim();
+            if (!ip) return alert("Please enter a valid IP address.");
+            
+            const ipPattern = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/;
+            if (!ipPattern.test(ip) && ip !== 'localhost') {
+                return alert("Please enter a valid IP format.");
+            }
+
+            const devices = getSenderManualDevices();
+            if (devices.some(d => d.ip === ip)) {
+                return alert("This TV IP is already added.");
+            }
+
+            devices.push({ name: `Roku TV (${ip.split('.').pop()})`, ip: ip, code: '' });
+            saveSenderManualDevices(devices);
+            ipInput.value = '';
+            renderSenderDevices();
+        }
+
+        function deleteSenderDevice(index, event) {
+            if (event) event.stopPropagation();
+            if (!confirm("Remove this TV pairing?")) return;
+            const devices = getSenderManualDevices();
+            const removed = devices.splice(index, 1)[0];
+            saveSenderManualDevices(devices);
+            
+            // If the deleted device was the default pairing code, clear it
+            const defaultCode = getSenderDefaultPairingCode();
+            if (removed.code && defaultCode === removed.code) {
+                saveSenderDefaultPairingCode('');
+            }
+            renderSenderDevices();
+        }
+
+        function setSenderActiveDevice(device) {
+            if (device.code) {
+                saveSenderDefaultPairingCode(device.code);
+            } else {
+                saveSenderDefaultPairingCode('');
+            }
+            // Temporarily store active IP
+            localStorage.setItem('quickbeam_sender_active_ip', device.ip);
+            renderSenderDevices();
+        }
+
+        function renderSenderDevices() {
+            const container = document.getElementById('senderDeviceListContainer');
+            container.innerHTML = '';
+            const devices = getSenderManualDevices();
+            const defaultCode = getSenderDefaultPairingCode();
+            const activeIp = localStorage.getItem('quickbeam_sender_active_ip');
+
+            devices.forEach((dev, index) => {
+                const isActive = (dev.code && defaultCode === dev.code) || (!dev.code && activeIp === dev.ip);
+                
+                const item = document.createElement('div');
+                item.className = `device-item ${isActive ? 'active' : ''}`;
+                item.onclick = () => setSenderActiveDevice(dev);
+
+                const info = document.createElement('div');
+                info.className = 'device-info';
+                
+                const nameText = document.createElement('div');
+                nameText.className = 'device-item-name';
+                nameText.innerText = dev.name + (isActive ? ' (Default)' : '');
+
+                const ipText = document.createElement('div');
+                ipText.className = 'device-item-ip';
+                ipText.innerText = dev.ip + (dev.code ? ` [Code: ${dev.code}]` : '');
+
+                info.appendChild(nameText);
+                info.appendChild(ipText);
+                item.appendChild(info);
+
+                const badgeRow = document.createElement('div');
+                badgeRow.style.display = 'flex';
+                badgeRow.style.alignItems = 'center';
+                badgeRow.style.gap = '0.5rem';
+
+                // Download/Install Button
+                const installBtn = document.createElement('button');
+                installBtn.className = 'switch-btn';
+                installBtn.innerText = '⚡️ Install App';
+                installBtn.title = 'Install Quickbeam app directly on this TV';
+                installBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    installChannelOnTv(dev.ip);
+                };
+                badgeRow.appendChild(installBtn);
+
+                // Delete Button
+                const delBtn = document.createElement('button');
+                delBtn.className = 'delete-device-btn';
+                delBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>';
+                delBtn.onclick = (e) => deleteSenderDevice(index, e);
+                badgeRow.appendChild(delBtn);
+
+                item.appendChild(badgeRow);
+                container.appendChild(item);
+            });
+        }
+
+        async function installChannelOnTv(ip) {
+            // ECP install endpoint: POST /install/<app-id>
+            // Sideloaded dev channel ID is 'dev'.
+            const url = `http://${ip}:8060/install/dev`;
+            
+            try {
+                // Perform local ECP request using form submission to bypass HTTPS mixed content block if sender page is HTTPS
+                let iframe = document.getElementById('hidden_install_iframe');
+                if (!iframe) {
+                    iframe = document.createElement('iframe');
+                    iframe.id = 'hidden_install_iframe';
+                    iframe.name = 'hidden_install_iframe';
+                    iframe.style.display = 'none';
+                    document.body.appendChild(iframe);
+                }
+
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = url;
+                form.target = 'hidden_install_iframe';
+                document.body.appendChild(form);
+                form.submit();
+                document.body.removeChild(form);
+                
+                alert(`Triggered channel installation command to TV at ${ip}. Make sure the TV is on and connected to the same Wi-Fi.`);
+            } catch (e) {
+                alert(`Failed to send command to TV at ${ip}.`);
             }
         }
 
