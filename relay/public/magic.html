@@ -491,7 +491,29 @@
             <button class="btn" onclick="launchVideo()">
                 <span>📺 Tap to Play on TV</span>
             </button>
-            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 1rem;">Make sure your TV is turned on!</p>
+            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 1rem; margin-bottom: 1rem;">Make sure your TV is turned on!</p>
+
+            <!-- Confirmation Prompt Card -->
+            <div id="confirm-prompt-card" style="display:none; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 14px; padding: 1.25rem; text-align: center; margin-top: 1rem; animation: fadeIn 0.3s ease-out;">
+                <div style="font-size: 0.9rem; font-weight: 500; margin-bottom: 0.75rem; color: var(--text-primary);">Did the video start playing on your TV?</div>
+                <div style="display: flex; gap: 0.5rem; justify-content: center;">
+                    <button class="switch-btn" onclick="confirmActiveDevice(true)" style="background: var(--success-bg); border-color: var(--success-border); color: var(--success-text); font-weight: 600; padding: 0.5rem 1.5rem;">Yes</button>
+                    <button class="switch-btn" onclick="confirmActiveDevice(false)" style="background: var(--error-bg); border-color: var(--error-border); color: var(--error-text); font-weight: 600; padding: 0.5rem 1.5rem;">No</button>
+                </div>
+            </div>
+
+            <!-- Troubleshooting Tip Card -->
+            <div id="troubleshoot-card" style="display:none; background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.15); border-radius: 14px; padding: 1.25rem; text-align: left; margin-top: 1rem; font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary); animation: fadeIn 0.3s ease-out;">
+                <div style="font-weight: 600; color: var(--error-text); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.35rem;">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                    Connection Troubleshooting
+                </div>
+                <ul style="margin: 0; padding-left: 1.2rem; color: var(--text-secondary);">
+                    <li>Ensure your phone is connected to your **home Wi-Fi network** (not cellular data).</li>
+                    <li>Verify the TV's IP address matches exactly under **Settings &gt; Network &gt; About** on your Roku screen.</li>
+                    <li>Some routers block local network communication (AP/Client Isolation). If so, manual IP pairing might be needed.</li>
+                </ul>
+            </div>
         </div>
 
         <div class="help-box">
@@ -580,7 +602,7 @@
                         saveManualDevices(manualDevices);
                     }
                     selectDevice(dev.localIp, dev.deviceName);
-                    return true;
+                return true;
                 }
             } catch (e) {
                 console.error("Failed to auto-resolve pairing code:", e);
@@ -637,6 +659,17 @@
 
             // 5. Default: No devices found, show the selection panel
             showNoDevicesState();
+
+            // Background check for HTTP local access systematic verification
+            if (window.location.protocol !== 'https:') {
+                const allIPs = [...autoDetectedDevices.map(d => d.localIp), ...manualDevices.map(d => d.ip)];
+                const confirmed = getConfirmedIps();
+                allIPs.forEach(ip => {
+                    if (!confirmed.includes(ip) && !ignored.includes(ip)) {
+                        pingAndConfirm(ip);
+                    }
+                });
+            }
         }
 
         function getManualDevices() {
@@ -661,6 +694,22 @@
 
         function saveIgnoredDevices(ips) {
             localStorage.setItem('quickbeam_ignored_devices', JSON.stringify(ips));
+        }
+
+        function getConfirmedIps() {
+            try {
+                return JSON.parse(localStorage.getItem('quickbeam_confirmed_ips')) || [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function saveConfirmedIp(ip) {
+            const confirmed = getConfirmedIps();
+            if (!confirmed.includes(ip)) {
+                confirmed.push(ip);
+                localStorage.setItem('quickbeam_confirmed_ips', JSON.stringify(confirmed));
+            }
         }
 
         // Render device list items
@@ -739,6 +788,23 @@
             badge.innerText = type === 'auto' ? 'Wi-Fi Auto' : 'Manual';
             badgeRow.appendChild(badge);
 
+            const confirmedIps = getConfirmedIps();
+            const isConfirmed = confirmedIps.includes(ip);
+
+            const statusBadge = document.createElement('span');
+            statusBadge.className = 'device-badge';
+            if (isConfirmed) {
+                statusBadge.innerText = '⚡️ Confirmed';
+                statusBadge.style.background = 'rgba(16, 185, 129, 0.15)';
+                statusBadge.style.color = 'var(--success-text)';
+            } else {
+                statusBadge.innerText = 'Unconfirmed';
+                statusBadge.style.background = 'rgba(255, 255, 255, 0.05)';
+                statusBadge.style.color = 'var(--text-secondary)';
+                statusBadge.style.opacity = '0.6';
+            }
+            badgeRow.appendChild(statusBadge);
+
             if (deletable) {
                 const delBtn = document.createElement('button');
                 delBtn.className = 'delete-device-btn';
@@ -768,6 +834,24 @@
 
             // Close selector list if open
             document.getElementById('device-manager-panel').style.display = 'none';
+
+            // Hide previous confirmation prompts when switching TV
+            document.getElementById('confirm-prompt-card').style.display = 'none';
+            document.getElementById('troubleshoot-card').style.display = 'none';
+
+            // Update pulse light based on confirmation status
+            const confirmedIps = getConfirmedIps();
+            const isConfirmed = confirmedIps.includes(ip);
+            const pulseLight = document.querySelector('.pulse-light');
+            if (pulseLight) {
+                if (isConfirmed) {
+                    pulseLight.style.backgroundColor = 'var(--success)';
+                    pulseLight.style.boxShadow = '0 0 8px var(--success)';
+                } else {
+                    pulseLight.style.backgroundColor = 'var(--warning)';
+                    pulseLight.style.boxShadow = '0 0 8px var(--warning)';
+                }
+            }
 
             // Highlight in list
             const items = document.querySelectorAll('.device-item');
@@ -832,6 +916,13 @@
                 saveManualDevices(manualDevices);
             }
 
+            // Remove from confirmed list if present
+            let confirmed = getConfirmedIps();
+            if (confirmed.includes(ip)) {
+                confirmed = confirmed.filter(item => item !== ip);
+                localStorage.setItem('quickbeam_confirmed_ips', JSON.stringify(confirmed));
+            }
+
             // If active device was deleted, reset selection
             if (activeDevice && activeDevice.ip === ip) {
                 localStorage.removeItem('quickbeam_active_device_ip');
@@ -858,14 +949,79 @@
             }
         }
 
+        // Interactive User-driven Confirmation
+        function confirmActiveDevice(success) {
+            const promptCard = document.getElementById('confirm-prompt-card');
+            const troubleshootCard = document.getElementById('troubleshoot-card');
+            
+            if (success) {
+                if (activeDevice) {
+                    saveConfirmedIp(activeDevice.ip);
+                    renderDeviceList(getManualDevices());
+                    
+                    // Update active device visual state (pulse green)
+                    const pulseLight = document.querySelector('.pulse-light');
+                    if (pulseLight) {
+                        pulseLight.style.backgroundColor = 'var(--success)';
+                        pulseLight.style.boxShadow = '0 0 8px var(--success)';
+                    }
+                }
+                promptCard.style.display = 'none';
+                troubleshootCard.style.display = 'none';
+                
+                // Show temporary verified feedback
+                const btnSpan = document.querySelector('.btn span');
+                const originalText = btnSpan.innerText;
+                btnSpan.innerText = "⚡️ TV Confirmed & Saved!";
+                setTimeout(() => { btnSpan.innerText = originalText; }, 3000);
+            } else {
+                promptCard.style.display = 'none';
+                troubleshootCard.style.display = 'block';
+            }
+        }
+
+        async function pingAndConfirm(ip) {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 1500);
+                
+                await fetch(`http://${ip}:8060/query/device-info`, {
+                    method: 'GET',
+                    mode: 'no-cors',
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+                saveConfirmedIp(ip);
+                renderDeviceList(getManualDevices());
+                
+                // Update pulse light if it matches active device
+                if (activeDevice && activeDevice.ip === ip) {
+                    const pulseLight = document.querySelector('.pulse-light');
+                    if (pulseLight) {
+                        pulseLight.style.backgroundColor = 'var(--success)';
+                        pulseLight.style.boxShadow = '0 0 8px var(--success)';
+                    }
+                }
+            } catch (e) {
+                // Fail silently on unreachable / HTTPS local block
+            }
+        }
+
         async function launchVideo() {
             if (!activeDevice || !linkData) return;
+            
+            const confirmedIps = getConfirmedIps();
+            const isConfirmed = confirmedIps.includes(activeDevice.ip);
             
             const rokuUrl = `http://${activeDevice.ip}:8060/launch/${linkData.appId}?contentId=${linkData.contentId}&mediaType=${linkData.mediaType}`;
             
             const btnSpan = document.querySelector('.btn span');
             const originalText = btnSpan.innerText;
             btnSpan.innerText = "✨ Starting...";
+            
+            // Hide previous prompt cards
+            document.getElementById('confirm-prompt-card').style.display = 'none';
+            document.getElementById('troubleshoot-card').style.display = 'none';
             
             try {
                 // Use a hidden form post to target a hidden iframe.
@@ -890,6 +1046,13 @@
                 setTimeout(() => {
                     btnSpan.innerText = "🎬 Playing on TV!";
                     setTimeout(() => { btnSpan.innerText = originalText; }, 3000);
+                    
+                    // Show confirmation prompt if the device is not yet verified
+                    if (!isConfirmed) {
+                        setTimeout(() => {
+                            document.getElementById('confirm-prompt-card').style.display = 'block';
+                        }, 1000);
+                    }
                 }, 1000);
             } catch (e) {
                 alert("Failed to reach TV. Please verify your phone is on the same home Wi-Fi network.");
