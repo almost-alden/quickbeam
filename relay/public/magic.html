@@ -537,12 +537,17 @@
                 document.getElementById('sender-msg').innerText = `${linkData.senderName || 'Someone'} sent you a video!`;
                 document.getElementById('instruction').innerText = `${linkData.senderName || 'Your friend'} wants to show you this on your TV.`;
                 
-                let sourceName = 'A Video Selection';
-                if (linkData.appId === '837') sourceName = 'A YouTube Video';
-                else if (linkData.appId === '12') sourceName = 'A Netflix Selection';
-                else if (linkData.appId === '13') sourceName = 'An Amazon Prime Video';
-                else if (linkData.appId === '186') sourceName = 'An EWTN Stream';
-                document.getElementById('content-info').innerText = sourceName;
+                let sourceName = 'Video';
+                if (linkData.appId === '837') sourceName = 'YouTube';
+                else if (linkData.appId === '12') sourceName = 'Netflix';
+                else if (linkData.appId === '13') sourceName = 'Amazon Prime';
+                else if (linkData.appId === '186') sourceName = 'EWTN';
+                
+                if (linkData.videoTitle) {
+                    document.getElementById('content-info').innerText = `"${linkData.videoTitle}" on ${sourceName}`;
+                } else {
+                    document.getElementById('content-info').innerText = `A ${sourceName} Selection`;
+                }
 
                 // Save list of auto-detected devices from the Relay server
                 autoDetectedDevices = linkData.devices || [];

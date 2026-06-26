@@ -580,6 +580,11 @@
             <input type="text" id="videoUrl" placeholder="Paste YouTube, Netflix, or Prime link">
         </div>
 
+        <label for="videoTitle">Video Title (Optional)</label>
+        <div class="input-group">
+            <input type="text" id="videoTitle" placeholder="e.g. West Wing, Season 1 Episode 4">
+        </div>
+
         <button class="btn-primary" onclick="generateLink()">
             <span>Create Magic Link</span>
             <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
@@ -664,22 +669,36 @@
             const parsedUrl = new URL(window.location.href);
             const sharedUrl = parsedUrl.searchParams.get('url');
             const sharedText = parsedUrl.searchParams.get('text');
+            const sharedTitle = parsedUrl.searchParams.get('title');
             
             let targetUrl = '';
+            let targetTitle = '';
+            
             if (sharedUrl) {
                 targetUrl = sharedUrl;
-            } else if (sharedText) {
+            }
+            
+            if (sharedText) {
                 // Extracts HTTP URLs embedded in share text (common in YouTube mobile share)
                 const urlMatch = sharedText.match(/https?:\/\/[^\s]+/);
                 if (urlMatch) {
-                    targetUrl = urlMatch[0];
-                } else {
+                    if (!targetUrl) targetUrl = urlMatch[0];
+                    // The text excluding the URL is the title
+                    targetTitle = sharedText.replace(urlMatch[0], '').replace(/["']/g, '').trim();
+                } else if (!targetUrl) {
                     targetUrl = sharedText;
                 }
             }
             
+            if (sharedTitle && !targetTitle) {
+                targetTitle = sharedTitle;
+            }
+            
             if (targetUrl) {
                 document.getElementById('videoUrl').value = targetUrl;
+            }
+            if (targetTitle) {
+                document.getElementById('videoTitle').value = targetTitle;
             }
             
             // Register Service Worker
@@ -731,6 +750,7 @@
         async function generateLink() {
             const senderName = document.getElementById('senderName').value.trim();
             const url = document.getElementById('videoUrl').value.trim();
+            const videoTitle = document.getElementById('videoTitle').value.trim();
             
             if (!url) return alert("Please paste a URL");
 
@@ -744,7 +764,7 @@
                 const res = await fetch('/api/create', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url, senderName })
+                    body: JSON.stringify({ url, senderName, videoTitle })
                 });
                 
                 const data = await res.json();
@@ -877,6 +897,7 @@
         async function sendToContact(contact) {
             const url = document.getElementById('videoUrl').value.trim();
             const senderName = document.getElementById('senderName').value.trim();
+            const videoTitle = document.getElementById('videoTitle').value.trim();
             
             if (!url) return alert("Please paste a Video URL first.");
             
@@ -888,7 +909,7 @@
                 const res = await fetch('/api/create', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url, senderName, pairingCode: contact.code })
+                    body: JSON.stringify({ url, senderName, pairingCode: contact.code, videoTitle })
                 });
                 
                 const data = await res.json();

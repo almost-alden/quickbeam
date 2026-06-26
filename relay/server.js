@@ -49,7 +49,7 @@ app.get('/api/status', (req, res) => {
 
 // 2. Create Magic Link (from Sender)
 app.post('/api/create', (req, res) => {
-    const { url, senderName, pairingCode } = req.body;
+    const { url, senderName, pairingCode, videoTitle } = req.body;
     const parsed = parseUrl(url);
     
     if (!parsed) {
@@ -57,7 +57,7 @@ app.post('/api/create', (req, res) => {
     }
 
     const linkId = crypto.randomUUID().substring(0, 8);
-    magicLinks.set(linkId, { ...parsed, senderName, pairingCode, originalUrl: url, createdAt: Date.now() });
+    magicLinks.set(linkId, { ...parsed, senderName, pairingCode, videoTitle, originalUrl: url, createdAt: Date.now() });
     
     // Determine protocol (supporting reverse proxies/Cloud Run)
     const protocol = req.headers['x-forwarded-proto'] || req.protocol;
