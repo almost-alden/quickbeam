@@ -76,4 +76,17 @@ describe('Deep Link Engine', () => {
     test('Unsupported URL', () => {
         expect(parseUrl('https://google.com')).toBeNull();
     });
+
+    test('Invalid Input Types (Null, Undefined, Number, Object)', () => {
+        expect(parseUrl(null)).toBeNull();
+        expect(parseUrl(undefined)).toBeNull();
+        expect(parseUrl('')).toBeNull();
+        expect(parseUrl(123)).toBeNull();
+        expect(parseUrl({})).toBeNull();
+    });
+
+    test('Invalid URL Format (Triggers catch block)', () => {
+        expect(parseUrl('not-a-valid-url')).toBeNull();
+        expect(parseUrl('://bad-url')).toBeNull();
+    });
 });
