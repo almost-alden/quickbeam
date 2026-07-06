@@ -74,6 +74,6 @@ function RegisterWithRelay()
             pairingCode: globalAA.pairingCode
         }
         request.AsyncPostFromString(FormatJson(body))
-        print "[Quickbeam] Heartbeat sent: " + localIp + " (Code: " + globalAA.pairingCode + ")"
+        print "[Quickbeam] Heartbeat sent: "; localIp; " (Code: "; globalAA.pairingCode; ")"
     end if
 end function
