@@ -9,11 +9,7 @@ sub Main()
     globalAA = GetGlobalAA()
 
     ' 1. Generate 6-digit pairing code
-    pairingCode = ""
-    for i = 1 to 6
-        digit = Rnd(10) - 1
-        pairingCode = pairingCode + Stri(digit).Trim()
-    end for
+    pairingCode = Right("000000" + (Rnd(1000000) - 1).ToStr(), 6)
     globalAA.pairingCode = pairingCode
 
     ' 2. Setup device identity
