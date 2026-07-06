@@ -464,14 +464,6 @@
 
             <div id="restoreContainer" style="margin-bottom: 1rem; text-align: center;"></div>
 
-            <div class="add-device-form" style="border-top: none; padding-top: 0; margin-top: 0; margin-bottom: 1.5rem;">
-                <button class="form-btn" id="scanBtn" onclick="runSubnetScan()" style="background: linear-gradient(135deg, #3b82f6, #2563eb); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">
-                    🔍 Scan Wi-Fi for TVs
-                </button>
-                <div id="scanStatus" style="display:none; font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.5rem; text-align: center; font-weight: 500;">
-                    Scanning subnets...
-                </div>
-            </div>
 
             <div class="add-device-form">
                 <div class="video-label">Add a TV Manually</div>
@@ -1060,123 +1052,6 @@
             }
         }
 
-        // Subnet Scanner Logic (CORS-Time Hack)
-        async function scanIP(ip) {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 1000);
-            const startTime = performance.now();
-
-            try {
-                await fetch(`http://${ip}:8060/query/device-info`, {
-                    method: 'GET',
-                    mode: 'no-cors',
-                    signal: controller.signal
-                });
-                const elapsed = performance.now() - startTime;
-                clearTimeout(timeoutId);
-                return { ip, active: true, elapsed };
-            } catch (e) {
-                clearTimeout(timeoutId);
-                const elapsed = performance.now() - startTime;
-                if (elapsed < 150 && e.name !== 'AbortError') {
-                    return { ip, active: true, elapsed };
-                }
-                return { ip, active: false, elapsed };
-            }
-        }
-
-        async function scanSubnet(subnetPrefix) {
-            const results = [];
-            const batchSize = 35;
-            
-            for (let i = 1; i <= 254; i += batchSize) {
-                const batch = [];
-                for (let j = 0; j < batchSize && (i + j) <= 254; j++) {
-                    const ip = `${subnetPrefix}.${i + j}`;
-                    batch.push(scanIP(ip));
-                }
-                const batchResults = await Promise.all(batch);
-                results.push(...batchResults.filter(r => r.active));
-            }
-            return results;
-        }
-
-        async function runSubnetScan() {
-            const scanBtn = document.getElementById('scanBtn');
-            const scanStatus = document.getElementById('scanStatus');
-            
-            scanBtn.disabled = true;
-            scanBtn.innerText = "Scanning network...";
-            scanStatus.style.display = "block";
-            scanStatus.innerText = "Initializing scan...";
-
-            if (window.location.protocol === 'https:') {
-                scanStatus.innerText = "⚠️ Auto-scan requires plain HTTP. Secure HTTPS sites cannot make requests to local network HTTP devices. Please open the HTTP version of this link or enter the TV IP manually below.";
-                scanBtn.disabled = false;
-                scanBtn.innerText = "🔍 Scan Wi-Fi for TVs";
-                return;
-            }
-
-            const subnets = ['192.168.1', '192.168.0', '192.168.86', '192.168.87', '10.0.0'];
-            
-            // Prioritize existing subnet scopes
-            const allIPs = [];
-            if (activeDevice) allIPs.push(activeDevice.ip);
-            autoDetectedDevices.forEach(d => allIPs.push(d.localIp));
-            getManualDevices().forEach(d => allIPs.push(d.ip));
-
-            allIPs.forEach(ip => {
-                const parts = ip.split('.');
-                if (parts.length === 4) {
-                    const prefix = parts.slice(0, 3).join('.');
-                    if (!subnets.includes(prefix)) {
-                        subnets.unshift(prefix);
-                    }
-                }
-            });
-
-            let foundCount = 0;
-            const manualDevices = getManualDevices();
-
-            for (let i = 0; i < subnets.length; i++) {
-                const prefix = subnets[i];
-                scanStatus.innerText = `Scanning subnet ${prefix}.x (${i + 1}/${subnets.length})...`;
-                
-                try {
-                    const found = await scanSubnet(prefix);
-                    for (const device of found) {
-                        const alreadyExists = manualDevices.some(d => d.ip === device.ip) || 
-                                              autoDetectedDevices.some(d => d.localIp === device.ip);
-                        
-                        if (!alreadyExists) {
-                            const newDevice = { name: `Roku TV (${device.ip.split('.').pop()})`, ip: device.ip };
-                            manualDevices.push(newDevice);
-                            foundCount++;
-                        }
-                    }
-                } catch (err) {
-                    console.error("Scan error on prefix: " + prefix, err);
-                }
-            }
-
-            saveManualDevices(manualDevices);
-            renderDeviceList(manualDevices);
-
-            scanStatus.innerText = foundCount > 0 
-                ? `✅ Scan complete! Found ${foundCount} new Roku TV(s).` 
-                : `ℹ️ Scan complete. No new TVs found.`;
-                
-            scanBtn.disabled = false;
-            scanBtn.innerText = "🔍 Scan Wi-Fi for TVs";
-            
-            if (!activeDevice && manualDevices.length > 0) {
-                initDeviceSelection();
-            }
-            
-            setTimeout(() => {
-                scanStatus.style.display = "none";
-            }, 5000);
-        }
 
         resolveLink();
     </script>
