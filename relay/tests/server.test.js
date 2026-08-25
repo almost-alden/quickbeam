@@ -99,4 +99,37 @@ describe('Relay Server API', () => {
         expect(resolveRes.status).toBe(200);
         expect(resolveRes.body.pairingCode).toBe('111222');
     });
+
+    test('getClientIp uses x-forwarded-for header if present', async () => {
+        const mockedIp = '203.0.113.195';
+
+        // Register device with x-forwarded-for header
+        const registerRes = await request(app)
+            .post('/api/register')
+            .set('x-forwarded-for', `${mockedIp}, 198.51.100.1`)
+            .send({
+                localIp: '192.168.1.150',
+                deviceId: 'test-forwarded-for',
+                deviceName: 'Forwarded Roku'
+            });
+
+        expect(registerRes.status).toBe(200);
+        expect(registerRes.body.status).toBe('ok');
+        expect(registerRes.body.matchIp).toBe(mockedIp);
+
+        // Check status with x-forwarded-for header
+        const statusRes = await request(app)
+            .get('/api/status')
+            .set('x-forwarded-for', `${mockedIp}`);
+
+        expect(statusRes.status).toBe(200);
+        expect(statusRes.body.publicIp).toBe(mockedIp);
+        expect(statusRes.body.active).toBe(true);
+        expect(statusRes.body.devices.length).toBeGreaterThan(0);
+
+        // Find the device we just registered
+        const device = statusRes.body.devices.find(d => d.deviceId === 'test-forwarded-for');
+        expect(device).toBeDefined();
+        expect(device.deviceName).toBe('Forwarded Roku');
+    });
 });
