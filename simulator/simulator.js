@@ -18,19 +18,7 @@ try {
     console.error(`⚠️ Invalid RELAY_URL "${RELAY_URL}", falling back to localhost:18000`);
 }
 
-// Dynamically auto-detect local network IP address
-function getLocalIp() {
-    const interfaces = os.networkInterfaces();
-    for (const name of Object.keys(interfaces)) {
-        for (const net of interfaces[name]) {
-            // Find first external IPv4 address
-            if (net.family === 'IPv4' && !net.internal) {
-                return net.address;
-            }
-        }
-    }
-    return 'localhost';
-}
+const { getLocalIp } = require("./network");
 
 // 1. Mock ECP Launch Endpoint
 app.post('/launch/:appId', (req, res) => {
