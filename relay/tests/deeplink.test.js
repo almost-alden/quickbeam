@@ -73,6 +73,25 @@ describe('Deep Link Engine', () => {
         });
     });
 
+
+    test('YouTube (Embed)', () => {
+        const url = 'https://www.youtube.com/embed/dQw4w9WgXcQ';
+        expect(parseUrl(url)).toEqual({
+            appId: '837',
+            contentId: 'dQw4w9WgXcQ',
+            mediaType: 'shortFormVideo'
+        });
+    });
+
+    test('YouTube (Shorts)', () => {
+        const url = 'https://www.youtube.com/shorts/dQw4w9WgXcQ';
+        expect(parseUrl(url)).toEqual({
+            appId: '837',
+            contentId: 'dQw4w9WgXcQ',
+            mediaType: 'shortFormVideo'
+        });
+    });
+
     test('Unsupported URL', () => {
         expect(parseUrl('https://google.com')).toBeNull();
     });
