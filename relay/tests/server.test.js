@@ -99,4 +99,18 @@ describe('Relay Server API', () => {
         expect(resolveRes.status).toBe(200);
         expect(resolveRes.body.pairingCode).toBe('111222');
     });
+
+    test('POST /api/support accepts support form submissions', async () => {
+        const res = await request(app)
+            .post('/api/support')
+            .send({
+                name: 'Test User',
+                email: 'test@example.com',
+                subject: 'Need help',
+                message: 'This is a test message'
+            });
+
+        expect(res.status).toBe(200);
+        expect(res.body).toEqual({ status: 'ok', message: 'Your support ticket has been received.' });
+    });
 });
