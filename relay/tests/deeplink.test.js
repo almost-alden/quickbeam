@@ -168,6 +168,30 @@ describe('Deep Link Engine', () => {
             mediaType: 'live'
         });
     });
+
+    // ---- Parser regression: lookalike hostnames must not be trusted ----
+    test('Lookalike hostnames are rejected', () => {
+        expect(parseUrl('https://youtube.com.evil.com/watch?v=dQw4w9WgXcQ')).toBeNull();
+        expect(parseUrl('https://www.youtube.com.evil.com/shorts/dQw4w9WgXcQ')).toBeNull();
+        expect(parseUrl('https://youtu.be.evil.com/dQw4w9WgXcQ')).toBeNull();
+        expect(parseUrl('https://netflix.com.evil.com/watch/81475311')).toBeNull();
+        expect(parseUrl('https://amazon.com.evil.com/dp/B00XXXXXXX')).toBeNull();
+        expect(parseUrl('https://ewtn.com.evil.com/tv/watch-live')).toBeNull();
+        expect(parseUrl('https://fakeyoutube.com/watch?v=dQw4w9WgXcQ')).toBeNull();
+    });
+
+    test('Legitimate subdomains still resolve', () => {
+        expect(parseUrl('https://m.youtube.com/watch?v=dQw4w9WgXcQ')).toEqual({
+            appId: '837',
+            contentId: 'dQw4w9WgXcQ',
+            mediaType: 'shortFormVideo'
+        });
+        expect(parseUrl('https://music.youtube.com/watch?v=dQw4w9WgXcQ')).toEqual({
+            appId: '837',
+            contentId: 'dQw4w9WgXcQ',
+            mediaType: 'shortFormVideo'
+        });
+    });
 });
 
 describe('ECP Launch Path', () => {
