@@ -1,71 +1,24 @@
-function hostMatches(hostname, domain) {
-    // Exact-or-suffix match only: prevents lookalike hostnames such as
-    // youtube.com.evil.com from being classified as the trusted domain.
-    return hostname === domain || hostname.endsWith('.' + domain);
-}
+const { findService, hostMatches } = require('./services');
 
+// parseUrl dispatches to the service registry (services.js): the URL's host
+// selects the service, and the service's own parse() extracts the deep-link
+// payload. Adding a service is a registry-only change.
 function parseUrl(url) {
     if (!url || typeof url !== 'string') return null;
 
     try {
         const parsed = new URL(url);
+        const service = findService(parsed);
+        if (!service) return null;
 
-        // 1. YouTube
-        if (hostMatches(parsed.hostname, 'youtube.com') || hostMatches(parsed.hostname, 'youtu.be')) {
-            let videoId = '';
-            if (parsed.hostname.includes('youtu.be')) {
-                videoId = parsed.pathname.substring(1).split('/')[0];
-            } else if (parsed.pathname.includes('/watch')) {
-                videoId = parsed.searchParams.get('v') || '';
-            } else if (parsed.pathname.includes('/embed/')) {
-                const parts = parsed.pathname.split('/embed/');
-                if (parts[1]) videoId = parts[1].split('/')[0];
-            } else if (parsed.pathname.includes('/shorts/')) {
-                const parts = parsed.pathname.split('/shorts/');
-                if (parts[1]) videoId = parts[1].split('/')[0];
-            }
+        const result = service.parse(parsed);
+        if (!result) return null;
 
-            if (videoId) {
-                return {
-                    appId: '837',
-                    contentId: videoId,
-                    mediaType: 'shortFormVideo'
-                };
-            }
-        }
-
-        // 2. Netflix
-        if (hostMatches(parsed.hostname, 'netflix.com')) {
-            const match = parsed.pathname.match(/\/(watch|title)\/([^/]+)/);
-            if (match && match[2]) {
-                return {
-                    appId: '12',
-                    contentId: match[2],
-                    mediaType: match[1] === 'watch' ? 'movie' : 'series'
-                };
-            }
-        }
-
-        // 3. Amazon Prime Video
-        if (hostMatches(parsed.hostname, 'amazon.com')) {
-            const match = parsed.pathname.match(/\/(detail|dp|v)\/([^/]+)/);
-            if (match && match[2]) {
-                return {
-                    appId: '13',
-                    contentId: match[2],
-                    mediaType: 'movie'
-                };
-            }
-        }
-
-        // 4. EWTN (Live Default)
-        if (hostMatches(parsed.hostname, 'ewtn.com')) {
-            return {
-                appId: '186',
-                contentId: 'live',
-                mediaType: 'live'
-            };
-        }
+        return {
+            appId: service.appId,
+            contentId: result.contentId,
+            mediaType: result.mediaType
+        };
     } catch (e) {
         // Handle invalid URL formats gracefully
     }
