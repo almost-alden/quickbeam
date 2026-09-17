@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quickbeam ⚡️ — Put anything on their TV, from anywhere</title>
+<meta name="description" content="Quickbeam turns any streaming link into a magic link. They open it on their phone, tap their TV, and it just plays. No apps, no accounts, no tech-support phone calls.">
+<style>
+  :root {
+    --bg: #0d0b1a;
+    --bg2: #151232;
+    --card: #1b1840;
+    --ink: #f4f2ff;
+    --muted: #a7a3d0;
+    --accent: #8b5cf6;
+    --accent2: #22d3ee;
+    --good: #34d399;
+    --warn: #fbbf24;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: radial-gradient(1200px 600px at 80% -10%, #2b1f66 0%, var(--bg) 55%) fixed, var(--bg);
+    color: var(--ink); line-height: 1.6;
+  }
+  a { color: var(--accent2); }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 22px; }
+  header.nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 0;
+  }
+  .brand { font-weight: 800; font-size: 1.35rem; letter-spacing: .2px; text-decoration: none; color: var(--ink); }
+  .brand span { color: var(--accent2); }
+  nav.links a { color: var(--muted); text-decoration: none; margin-left: 22px; font-size: .95rem; }
+  nav.links a:hover { color: var(--ink); }
+  .btn {
+    display: inline-block; background: linear-gradient(135deg, var(--accent), #6d28d9);
+    color: #fff; border: 0; border-radius: 999px; padding: 13px 30px;
+    font-size: 1.02rem; font-weight: 700; cursor: pointer; text-decoration: none;
+    box-shadow: 0 8px 28px rgba(139,92,246,.35); transition: transform .12s ease;
+  }
+  .btn:hover { transform: translateY(-2px); }
+  .btn:disabled { opacity: .6; cursor: wait; transform: none; }
+  .hero { text-align: center; padding: 72px 0 40px; }
+  .hero h1 { font-size: clamp(2.2rem, 5.4vw, 3.6rem); line-height: 1.12; margin: 0 0 18px; }
+  .hero h1 .grad {
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .hero p.sub { color: var(--muted); font-size: 1.18rem; max-width: 640px; margin: 0 auto 30px; }
+  .pill {
+    display: inline-block; font-size: .82rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--accent2); border: 1px solid rgba(34,211,238,.4); border-radius: 999px; padding: 6px 16px; margin-bottom: 22px;
+  }
+  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; margin: 56px 0; }
+  .card {
+    background: rgba(27,24,64,.75); border: 1px solid rgba(139,92,246,.22);
+    border-radius: var(--radius); padding: 26px 22px; backdrop-filter: blur(6px);
+  }
+  .card h3 { margin: 0 0 8px; font-size: 1.08rem; }
+  .card p { margin: 0; color: var(--muted); font-size: .96rem; }
+  .num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 34px; height: 34px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    font-weight: 800; margin-bottom: 12px;
+  }
+  section.block { padding: 34px 0; }
+  section.block h2 { font-size: 1.9rem; margin: 0 0 8px; text-align: center; }
+  section.block p.lead { color: var(--muted); text-align: center; max-width: 620px; margin: 0 auto 30px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+  .chip {
+    background: var(--card); border: 1px solid rgba(139,92,246,.25);
+    padding: 8px 16px; border-radius: 999px; font-size: .92rem; color: var(--ink);
+  }
+  .uses { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; }
+  .price-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; max-width: 820px; margin: 0 auto; }
+  .price { text-align: center; }
+  .price .amount { font-size: 2rem; font-weight: 800; margin: 8px 0; }
+  .price ul { list-style: none; padding: 0; margin: 14px 0 0; color: var(--muted); font-size: .95rem; }
+  .price ul li { margin: 7px 0; }
+  .tag {
+    display: inline-block; font-size: .75rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+    border-radius: 6px; padding: 3px 10px; margin-bottom: 6px;
+  }
+  .tag.free { background: rgba(52,211,153,.15); color: var(--good); }
+  .tag.pro { background: rgba(139,92,246,.18); color: #c4b5fd; }
+  form.signup {
+    background: rgba(27,24,64,.85); border: 1px solid rgba(139,92,246,.3);
+    border-radius: var(--radius); padding: 32px; max-width: 640px; margin: 0 auto;
+  }
+  form.signup h2 { margin-top: 0; text-align: center; }
+  form.signup p.lead { text-align: center; }
+  label.field { display: block; margin: 16px 0 6px; font-weight: 600; font-size: .95rem; }
+  label.field small { display: block; font-weight: 400; color: var(--muted); }
+  input[type=text], input[type=tel], input[type=email] {
+    width: 100%; padding: 12px 14px; border-radius: 10px; font-size: 1rem;
+    border: 1px solid rgba(139,92,246,.35); background: #100d26; color: var(--ink);
+  }
+  input:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+  .chan-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-top: 8px; }
+  .chan { display: flex; align-items: center; gap: 8px; font-size: .92rem; background: #100d26;
+    border: 1px solid rgba(139,92,246,.2); border-radius: 8px; padding: 8px 10px; cursor: pointer; }
+  .chan input { accent-color: var(--accent); }
+  .form-err { color: #f87171; font-size: .92rem; margin-top: 12px; min-height: 1.4em; }
+  .form-ok {
+    display: none; text-align: center; padding: 30px 10px;
+  }
+  .form-ok .big { font-size: 3rem; }
+  .fine { color: var(--muted); font-size: .82rem; text-align: center; margin-top: 18px; }
+  footer { border-top: 1px solid rgba(139,92,246,.18); margin-top: 60px; padding: 26px 0 40px; color: var(--muted); font-size: .88rem; text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="nav">
+    <a class="brand" href="#top">Quickbeam <span>⚡️</span></a>
+    <nav class="links">
+      <a href="#how">How it works</a>
+      <a href="#services">Services</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#signup" class="btn" style="padding:9px 22px">Get early access</a>
+    </nav>
+  </header>
+
+  <div class="hero" id="top">
+    <div class="pill">Free while in beta</div>
+    <h1>Put anything on their TV.<br><span class="grad">From anywhere.</span></h1>
+    <p class="sub">Quickbeam turns any streaming link into a magic link. They open it on their phone, tap their TV, and it just plays. No apps to install. No accounts. No 45-minute tech-support phone call.</p>
+    <a class="btn" href="#signup">Get early access</a>
+  </div>
+
+  <section class="block" id="how">
+    <h2>How it works</h2>
+    <p class="lead">Three steps. Zero installs. If they can tap a link, they can do this.</p>
+    <div class="steps">
+      <div class="card"><div class="num">1</div><h3>You send a link</h3><p>Paste any YouTube, Netflix, Disney+, or other streaming link into Quickbeam. We turn it into a magic link and text it to them.</p></div>
+      <div class="card"><div class="num">2</div><h3>They open it at home</h3><p>They tap the link on their phone while on home Wi-Fi. Quickbeam finds their Roku on the network — nothing to install, nothing to pair.</p></div>
+      <div class="card"><div class="num">3</div><h3>They tap their TV — it plays</h3><p>One tap and the right app opens to the right show or movie. Movie night starts instead of troubleshooting.</p></div>
+    </div>
+  </section>
+
+  <section class="block" id="services">
+    <h2>Works with the services they already pay for</h2>
+    <p class="lead">23 streaming services supported today, growing all the time.</p>
+    <div class="chips" id="serviceChips"><span class="chip">Loading…</span></div>
+  </section>
+
+  <section class="block" id="who">
+    <h2>Made for the family CIO</h2>
+    <p class="lead">You know who you are: the one everyone calls when the TV "isn't working."</p>
+    <div class="uses">
+      <div class="card"><h3>👨‍👩‍👧 Family</h3><p>Send Mom the show everyone&rsquo;s talking about. She taps, it plays. You never hear "which input is it on?" again.</p></div>
+      <div class="card"><h3>🧓 Grandparents</h3><p>If they can open a text message, they can watch anything you send. Independence for them, peace for you.</p></div>
+      <div class="card"><h3>🏠 Hosts</h3><p>Airbnb hosts and property managers: queue up a welcome video or local guide on every TV without touching a remote.</p></div>
+      <div class="card"><h3>🎉 Gatherings</h3><p>Watch parties, game day, family reunions — anyone can throw a video up on the big screen from their phone.</p></div>
+    </div>
+  </section>
+
+  <section class="block" id="pricing">
+    <h2>Simple pricing</h2>
+    <p class="lead">Free while we&rsquo;re in beta. After launch, the free tier stays free — supported by a few ads on the sender side only. Never on their TV.</p>
+    <div class="price-grid">
+      <div class="card price">
+        <span class="tag free">Free</span>
+        <div class="amount">$0</div>
+        <ul>
+          <li>Unlimited magic links</li>
+          <li>All 23 services</li>
+          <li>Sender-side ads only</li>
+        </ul>
+      </div>
+      <div class="card price">
+        <span class="tag pro">Pro · coming soon</span>
+        <div class="amount">TBD</div>
+        <ul>
+          <li>Everything in Free</li>
+          <li>No ads, ever</li>
+          <li>Priority support</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="signup">
+    <form class="signup" id="interestForm" novalidate>
+      <div id="formFields">
+        <h2>Get early access ⚡️</h2>
+        <p class="lead">Tell us where to reach you and what you watch. We&rsquo;ll text or email you the moment your invite is ready.</p>
+        <label class="field" for="phone">Mobile phone <small>For a text when your invite is ready. Phone or email — at least one.</small></label>
+        <input type="tel" id="phone" name="phone" placeholder="(555) 123-4567" autocomplete="tel">
+        <label class="field" for="email">Email <small>Or reach you by email instead.</small></label>
+        <input type="email" id="email" name="email" placeholder="you@example.com" autocomplete="email">
+        <label class="field" for="zip">ZIP code <small>So we know where to launch first.</small></label>
+        <input type="text" id="zip" name="zip" placeholder="12946" inputmode="numeric" autocomplete="postal-code" maxlength="10">
+        <label class="field">Which services do you watch most? <small>Pick up to 5 — this tells us what to perfect first.</small></label>
+        <div class="chan-grid" id="chanGrid"><span style="color:var(--muted)">Loading services…</span></div>
+        <div class="form-err" id="formErr"></div>
+        <div style="text-align:center; margin-top: 18px;">
+          <button class="btn" type="submit" id="submitBtn">Notify me ⚡️</button>
+        </div>
+        <p class="fine">We&rsquo;ll only contact you about Quickbeam early access. No spam, no selling your info — ever.</p>
+      </div>
+      <div class="form-ok" id="formOk">
+        <div class="big">🎉</div>
+        <h2>You&rsquo;re on the list!</h2>
+        <p class="lead">We&rsquo;ll reach out the moment your invite is ready.</p>
+      </div>
+    </form>
+  </section>
+
+  <footer>
+    Quickbeam ⚡️ — the remote Roku bridge. Made with care for every family CIO out there.
+  </footer>
+</div>
+
+<script>
+(function () {
+  var FALLBACK_SERVICES = [
+    ["youtube","YouTube"],["netflix","Netflix"],["prime-video","Amazon Prime"],["disney-plus","Disney+"],
+    ["hulu","Hulu"],["max","Max"],["peacock","Peacock"],["paramount-plus","Paramount+"],
+    ["apple-tv-plus","Apple TV+"],["tubi","Tubi"],["pluto-tv","Pluto TV"],["roku-channel","Roku Channel"],
+    ["espn","ESPN"],["sling-tv","Sling TV"],["fubo","Fubo"],["plex","Plex"],
+    ["fandango-at-home","Fandango at Home"],["discovery-plus","Discovery+"],["starz","Starz"],
+    ["philo","Philo"],["spotify","Spotify"],["amc-plus","AMC+"],["ewtn","EWTN"]
+  ];
+
+  function renderServices(list) {
+    var chips = document.getElementById('serviceChips');
+    chips.innerHTML = '';
+    list.forEach(function (s) {
+      var el = document.createElement('span');
+      el.className = 'chip';
+      el.textContent = s.name;
+      chips.appendChild(el);
+    });
+    var grid = document.getElementById('chanGrid');
+    grid.innerHTML = '';
+    list.forEach(function (s) {
+      var label = document.createElement('label');
+      label.className = 'chan';
+      var box = document.createElement('input');
+      box.type = 'checkbox';
+      box.name = 'channels';
+      box.value = s.id;
+      box.addEventListener('change', function () {
+        var checked = grid.querySelectorAll('input:checked');
+        if (checked.length > 5) { box.checked = false; }
+      });
+      label.appendChild(box);
+      label.appendChild(document.createTextNode(s.name));
+      grid.appendChild(label);
+    });
+  }
+
+  fetch('/api/services')
+    .then(function (r) { if (!r.ok) throw new Error('bad'); return r.json(); })
+    .then(function (data) {
+      if (Array.isArray(data) && data.length) renderServices(data);
+      else renderServices(FALLBACK_SERVICES.map(function (p) { return { id: p[0], name: p[1] }; }));
+    })
+    .catch(function () {
+      renderServices(FALLBACK_SERVICES.map(function (p) { return { id: p[0], name: p[1] }; }));
+    });
+
+  var form = document.getElementById('interestForm');
+  var errBox = document.getElementById('formErr');
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    errBox.textContent = '';
+    var phone = document.getElementById('phone').value.trim();
+    var email = document.getElementById('email').value.trim();
+    var zip = document.getElementById('zip').value.trim();
+    var channels = Array.prototype.map.call(
+      document.querySelectorAll('#chanGrid input:checked'), function (b) { return b.value; });
+
+    if (!phone && !email) { errBox.textContent = 'Please give us a phone number or an email address.'; return; }
+    if (!/^\d{5}(-\d{4})?$/.test(zip)) { errBox.textContent = 'Please enter a valid 5-digit ZIP code.'; return; }
+    if (!channels.length) { errBox.textContent = 'Pick at least one service you watch.'; return; }
+
+    var btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+    fetch('/api/interest', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: phone, email: email, zip: zip, channels: channels })
+    })
+      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, body: j }; }); })
+      .then(function (res) {
+        if (res.ok) {
+          document.getElementById('formFields').style.display = 'none';
+          document.getElementById('formOk').style.display = 'block';
+        } else {
+          errBox.textContent = (res.body && res.body.error) || 'Something went wrong — please try again.';
+          btn.disabled = false;
+          btn.textContent = 'Notify me ⚡️';
+        }
+      })
+      .catch(function () {
+        errBox.textContent = 'Network error — please try again.';
+        btn.disabled = false;
+        btn.textContent = 'Notify me ⚡️';
+      });
+  });
+})();
+</script>
+</body>
+</html>
