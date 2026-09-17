@@ -21,28 +21,35 @@ try {
 const { getLocalIp } = require("./network");
 
 // 1. Mock ECP Launch Endpoint
+// Accepts launches for every app in the relay's service registry (not just the
+// four below): it logs the exact appId/contentId/mediaType received and opens
+// a watch URL in the browser only when a known-good template exists.
 app.post('/launch/:appId', (req, res) => {
     const { appId } = req.params;
-    const { contentId } = req.query;
-    
+    const { contentId, mediaType } = req.query;
+
     console.log(`
 🚀 [ROKU SIMULATOR] Received Launch Command!`);
     console.log(`📺 App ID: ${appId}`);
     console.log(`🎬 Content ID: ${contentId}`);
+    console.log(`🏷️ Media Type: ${mediaType}`);
 
     let url = '';
     if (appId === '837') url = `https://www.youtube.com/watch?v=${contentId}`;
     else if (appId === '12') url = `https://www.netflix.com/watch/${contentId}`;
     else if (appId === '13') url = `https://www.amazon.com/gp/video/detail/${contentId}`;
     else if (appId === '186') url = `https://www.ewtn.com/tv/watch-live`;
+    else if (appId === '291097') url = `https://www.disneyplus.com/video/${contentId}`;
+    else if (appId === '2285') url = `https://www.hulu.com/watch/${contentId}`;
+    else if (appId === '41468') url = `https://tubitv.com/movies/${contentId}`;
 
     if (url) {
         console.log(`🌐 Opening in browser: ${url}`);
         opn(url);
-        res.status(200).send('Launched');
     } else {
-        res.status(404).send('App not mocked');
+        console.log(`ℹ️ No browser template for app ${appId}; launch acknowledged anyway.`);
     }
+    res.status(200).send('Launched');
 });
 
 // 2. Heartbeat to Relay
