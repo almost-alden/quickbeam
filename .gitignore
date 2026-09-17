@@ -39,3 +39,6 @@ out/
 packaing-instructions.txt
 roku-mcp.txt
 
+# Local data with PII (interest signups etc.) — never commit
+relay/data/
+
