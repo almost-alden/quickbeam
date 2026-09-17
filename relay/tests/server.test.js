@@ -113,4 +113,30 @@ describe('Relay Server API', () => {
         expect(res.status).toBe(200);
         expect(res.body).toEqual({ status: 'ok', message: 'Your support ticket has been received.' });
     });
+
+    test('Expired link returns 410', async () => {
+        const realDateNow = Date.now;
+        try {
+            Date.now = jest.fn(() => 1000000000000);
+            const createRes = await request(app)
+                .post('/api/create')
+                .send({
+                    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+                    senderName: 'Johnny'
+                });
+
+            expect(createRes.status).toBe(200);
+
+            // Move time forward by > 24 hours (24 * 60 * 60 * 1000)
+            Date.now = jest.fn(() => 1000000000000 + (24 * 60 * 60 * 1000) + 1000);
+
+            const resolveRes = await request(app)
+                .get(`/api/resolve/${createRes.body.linkId}`);
+
+            expect(resolveRes.status).toBe(410);
+            expect(resolveRes.body.error).toBe('Link has expired');
+        } finally {
+            Date.now = realDateNow;
+        }
+    });
 });
