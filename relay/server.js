@@ -3,6 +3,7 @@ const cors = require('cors');
 const crypto = require('crypto');
 const { registerDevice, getDevicesByPublicIp, findDeviceByPairingCode } = require('./registry');
 const { parseUrl, scrapeTitle } = require('./deeplink');
+const { getServiceByAppId, publicServices } = require('./services');
 
 const app = express();
 app.use(cors());
@@ -62,12 +63,18 @@ app.post('/api/create', async (req, res) => {
     }
 
     const linkId = crypto.randomUUID().substring(0, 8);
-    magicLinks.set(linkId, { ...parsed, senderName, pairingCode, videoTitle, originalUrl: url, createdAt: Date.now() });
+    const service = getServiceByAppId(parsed.appId);
+    magicLinks.set(linkId, { ...parsed, serviceName: service ? service.name : 'Video', senderName, pairingCode, videoTitle, originalUrl: url, createdAt: Date.now() });
     
     // Determine protocol (supporting reverse proxies/Cloud Run)
     const protocol = req.headers['x-forwarded-proto'] || req.protocol;
     const host = req.get('host');
     res.json({ linkId, relayUrl: `${protocol}://${host}/magic/${linkId}` });
+});
+
+// 2b. List supported services (public registry view: id, name, appId)
+app.get('/api/services', (req, res) => {
+    res.json(publicServices());
 });
 
 // 3. Resolve Magic Link (from Recipient)
