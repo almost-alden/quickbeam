@@ -1,0 +1,44 @@
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor configurations
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env*.local
+
+# Roku build artifacts
+out/
+*.zip
+
+# Local context/instruction files
+packaing-instructions.txt
+roku-mcp.txt
+
+# Local data with PII (interest signups etc.) — never commit
+relay/data/
+
