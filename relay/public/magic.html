@@ -556,11 +556,10 @@
                 document.getElementById('sender-msg').innerText = `${linkData.senderName || 'Someone'} sent you a video!`;
                 document.getElementById('instruction').innerText = `${linkData.senderName || 'Your friend'} wants to show you this on your TV.`;
                 
-                let sourceName = 'Video';
-                if (linkData.appId === '837') sourceName = 'YouTube';
-                else if (linkData.appId === '12') sourceName = 'Netflix';
-                else if (linkData.appId === '13') sourceName = 'Amazon Prime';
-                else if (linkData.appId === '186') sourceName = 'EWTN';
+                // Service display name comes from the relay's service registry
+                // (stamped onto the link at creation), so adding a Roku app
+                // never requires a frontend change.
+                let sourceName = linkData.serviceName || 'Video';
                 
                 if (linkData.videoTitle) {
                     document.getElementById('content-info').innerText = `"${linkData.videoTitle}" on ${sourceName}`;
