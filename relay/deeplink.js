@@ -1,3 +1,9 @@
+function hostMatches(hostname, domain) {
+    // Exact-or-suffix match only: prevents lookalike hostnames such as
+    // youtube.com.evil.com from being classified as the trusted domain.
+    return hostname === domain || hostname.endsWith('.' + domain);
+}
+
 function parseUrl(url) {
     if (!url || typeof url !== 'string') return null;
 
@@ -5,7 +11,7 @@ function parseUrl(url) {
         const parsed = new URL(url);
 
         // 1. YouTube
-        if (parsed.hostname.includes('youtube.com') || parsed.hostname.includes('youtu.be')) {
+        if (hostMatches(parsed.hostname, 'youtube.com') || hostMatches(parsed.hostname, 'youtu.be')) {
             let videoId = '';
             if (parsed.hostname.includes('youtu.be')) {
                 videoId = parsed.pathname.substring(1).split('/')[0];
@@ -29,7 +35,7 @@ function parseUrl(url) {
         }
 
         // 2. Netflix
-        if (parsed.hostname.includes('netflix.com')) {
+        if (hostMatches(parsed.hostname, 'netflix.com')) {
             const match = parsed.pathname.match(/\/(watch|title)\/([^/]+)/);
             if (match && match[2]) {
                 return {
@@ -41,7 +47,7 @@ function parseUrl(url) {
         }
 
         // 3. Amazon Prime Video
-        if (parsed.hostname.includes('amazon.com')) {
+        if (hostMatches(parsed.hostname, 'amazon.com')) {
             const match = parsed.pathname.match(/\/(detail|dp|v)\/([^/]+)/);
             if (match && match[2]) {
                 return {
@@ -53,7 +59,7 @@ function parseUrl(url) {
         }
 
         // 4. EWTN (Live Default)
-        if (parsed.hostname.includes('ewtn.com')) {
+        if (hostMatches(parsed.hostname, 'ewtn.com')) {
             return {
                 appId: '186',
                 contentId: 'live',
