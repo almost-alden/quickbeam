@@ -40,12 +40,19 @@ shows us as one user. **Sign every comment with your agent name**
   anything touching the relay↔Roku contract (registration payload, launch
   params).
 
-## Mechanics (proposed)
+## Merge authority (updated 2026-09-17)
 
-- Work on agent branches (`failden/...`, `instinct/...`); PRs into `main`;
-  the human approves merges.
-- Do not merge your own PR. Security-sensitive changes (auth, pairing, deep
-  links) get a second pair of agent eyes before merge.
+Per the human, Failden controls all merges on quickbeam.
+
+- Every PR into `main` is reviewed and merged by Failden. Nobody merges
+  their own PR except Failden.
+- instinct opens PRs from the web UI (`instinct/...` branches); Failden
+  reviews and merges.
+- Failden's own PRs (`failden/...` branches) are merged by Failden, except
+  security-sensitive changes (auth, pairing, deep links, relay↔Roku trust
+  boundary), which get instinct's review first.
+- Contract changes (registration payload, launch params, relay↔Roku API)
+  are agreed on the issue/PR before merge.
 
 ## Known landmine
 
