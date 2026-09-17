@@ -120,13 +120,14 @@ app.get('/support', (req, res) => {
 // Support form API
 app.post('/api/support', (req, res) => {
     const { name, email, subject, message } = req.body;
-    console.log(`========================================`);
-    console.log(`[SUPPORT EMAIL TICKET]`);
-    console.log(`To: quickbeam+hello@johnnylehane.com`);
-    console.log(`From: ${name} <${email}>`);
-    console.log(`Subject: ${subject}`);
-    console.log(`Message:\n${message}`);
-    console.log(`========================================`);
+    console.log(JSON.stringify({
+        event: 'SUPPORT_EMAIL_TICKET',
+        to: 'quickbeam+hello@johnnylehane.com',
+        name,
+        email,
+        subject,
+        message
+    }));
     res.json({ status: 'ok', message: 'Your support ticket has been received.' });
 });
 
