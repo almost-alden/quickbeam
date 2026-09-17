@@ -60,4 +60,24 @@ describe('Device Registry', () => {
         // Restore real Date.now
         Date.now = realDateNow;
     });
+
+    test('TTL Expiry via Date.now mocking for pairing code', () => {
+        const publicIp = '5.5.5.5';
+        const realDateNow = Date.now;
+        const code = '112233';
+
+        Date.now = jest.fn(() => 1000000000000);
+        registerDevice(publicIp, '10.0.0.6', 'roku-ttl-pairing', 'Expired Pairing Device', code);
+
+        // Verify registered
+        expect(findDeviceByPairingCode(code)).toBeDefined();
+        expect(findDeviceByPairingCode(code)).not.toBeNull();
+
+        // Move time forward by 61 minutes
+        Date.now = jest.fn(() => 1000000000000 + (1000 * 60 * 61));
+        expect(findDeviceByPairingCode(code)).toBeNull();
+
+        // Restore real Date.now
+        Date.now = realDateNow;
+    });
 });
