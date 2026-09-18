@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Primetime — mobile mockups</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--black:#0A0A0C;--amber:#FFB224;--red:#FF453A;--gray:#9BA1A6;--white:#F5F5F4;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#000;font-family:Inter,system-ui,sans-serif;color:var(--white);padding:32px 16px;}
+  h1{font-family:Oswald,sans-serif;color:var(--white);text-align:center;font-size:30px;letter-spacing:.04em;margin-bottom:6px}
+  h1 em{color:var(--amber);font-style:normal}
+  .sub{color:var(--gray);text-align:center;font-size:13px;margin-bottom:28px}
+  .surface{margin:0 auto 40px;max-width:420px}
+  .surface>h2{font-family:Oswald,sans-serif;color:var(--white);font-size:15px;letter-spacing:.06em;margin-bottom:10px}
+  .surface>h2 span{color:var(--gray);font-family:Inter;font-weight:400;font-size:12px;letter-spacing:0}
+  .phone{width:375px;max-width:100%;margin:0 auto;background:#16161a;border-radius:44px;padding:14px 14px 22px;box-shadow:0 24px 60px rgba(0,0,0,.7);border:1px solid #26262c}
+  .notch{width:120px;height:26px;background:#000;border-radius:14px;margin:0 auto 12px}
+  .screen{background:var(--black);border-radius:32px;overflow:hidden;min-height:640px;display:flex;flex-direction:column}
+  .kicker{font-family:Oswald,sans-serif;font-size:11px;letter-spacing:.22em;color:var(--amber);padding:20px 20px 4px}
+  .hdr{padding:0 20px 8px}
+  .hdr h3{font-family:Oswald,sans-serif;font-size:30px;font-weight:700;letter-spacing:.02em;line-height:1.05}
+  .hdr p{font-size:13px;color:var(--gray);margin-top:6px}
+  .guide{padding:8px 20px;display:flex;flex-direction:column;gap:10px}
+  .listing{border:1px solid #2a2a30;border-radius:12px;padding:12px 14px;display:flex;gap:12px;align-items:center}
+  .listing .time{font-family:Oswald,sans-serif;color:var(--amber);font-size:13px;white-space:nowrap}
+  .listing .t{font-size:14px;font-weight:600}
+  .listing .s{font-size:12px;color:var(--gray)}
+  .listing .dot{width:9px;height:9px;border-radius:50%;background:var(--red);box-shadow:0 0 8px var(--red);flex:none}
+  .paste{margin:10px 20px;border:1.5px dashed #3a3a42;border-radius:14px;padding:16px;text-align:center;color:var(--gray);font-size:14px}
+  .paste b{color:var(--white)}
+  .cta{margin:12px 20px;background:var(--amber);color:#1a1200;border-radius:14px;text-align:center;padding:16px;font-family:Oswald,sans-serif;font-weight:700;font-size:18px;letter-spacing:.05em}
+  .showart{margin:6px 20px;border-radius:16px;background:linear-gradient(135deg,#2b1a05,#0A0A0C 60%),radial-gradient(circle at 70% 20%,#FFB22433,transparent 60%);min-height:150px;display:flex;flex-direction:column;justify-content:flex-end;padding:16px;border:1px solid #2a2a30}
+  .showart .svc{font-size:11px;letter-spacing:.18em;color:var(--amber);font-family:Oswald,sans-serif}
+  .showart .title{font-family:Oswald,sans-serif;font-size:24px;font-weight:700}
+  .screenpick{margin:8px 20px;display:flex;flex-direction:column;gap:8px}
+  .tv{border:1px solid #2a2a30;border-radius:12px;padding:13px 15px;font-size:14px;display:flex;justify-content:space-between}
+  .tv small{color:var(--gray)}
+  .tv.sel{border-color:var(--amber);background:#1d1503}
+  .steps{padding:10px 20px;display:flex;flex-direction:column;gap:12px}
+  .step{display:flex;gap:12px;align-items:flex-start}
+  .n{font-family:Oswald,sans-serif;background:var(--amber);color:#1a1200;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;flex:none}
+  .step p{font-size:13px;color:#d7d7db}
+  .step b{color:#fff}
+  .code{font-family:Oswald,sans-serif;font-size:34px;letter-spacing:.3em;text-align:center;color:var(--amber);padding:8px 0}
+  .adcard{margin:12px 20px;border:1px dashed #4a4a52;border-radius:14px;padding:14px;background:#141318}
+  .adcard .tag{font-size:10px;letter-spacing:.14em;color:var(--gray);font-family:Oswald,sans-serif}
+  .adcard b{display:block;margin:6px 0 2px;font-size:15px}
+  .adcard p{font-size:12px;color:var(--gray)}
+  .adcard .cta2{margin-top:10px;background:#fff;color:#000;border-radius:10px;text-align:center;padding:11px;font-weight:700;font-size:13px}
+  .tier{margin:10px 20px;border:1px solid #2a2a30;border-radius:16px;padding:18px}
+  .tier.hot{border:2px solid var(--amber);background:#141007}
+  .tier h4{font-family:Oswald,sans-serif;font-size:16px;letter-spacing:.08em}
+  .tier .price{font-family:Oswald,sans-serif;font-size:34px;margin:4px 0}
+  .tier ul{list-style:none;font-size:13px;color:#c9c9ce;margin:8px 0}
+  .tier li{margin:5px 0}
+  .tier li::before{content:"● ";color:var(--amber);font-size:9px}
+  .foot{margin-top:auto;padding:14px 20px 18px;font-size:11px;color:var(--gray);text-align:center}
+  .livebar{display:flex;align-items:center;gap:8px;margin:0 20px 4px;font-size:11px;color:var(--gray);letter-spacing:.1em;font-family:Oswald,sans-serif}
+</style></head><body>
+<h1>PRIME<em>TIME</em></h1>
+<p class="sub">Concept 2 · mobile-first mockups · five surfaces</p>
+
+<div class="surface"><h2>1 · SEND PAGE <span>"program a TV"</span></h2>
+<div class="phone"><div class="notch"></div><div class="screen">
+  <div class="kicker">▲ PROGRAM A TV</div>
+  <div class="hdr"><h3>What's on<br>tonight?</h3><p>Drop a link — it becomes a listing.</p></div>
+  <div class="paste">🔗 <b>Paste a video link</b><br><span style="font-size:12px">YouTube · Netflix · YouTube TV · 20+ services</span></div>
+  <div class="livebar"><span style="width:8px;height:8px;border-radius:50%;background:var(--red);box-shadow:0 0 8px var(--red)"></span> ON THE GUIDE</div>
+  <div class="guide">
+    <div class="listing"><span class="dot"></span><div><div class="t">West Wing S1E4</div><div class="s">Mom's TV · 8:00 PM · played ✓</div></div></div>
+    <div class="listing"><div style="width:9px"></div><div><div class="t">Chiefs vs Bills highlights</div><div class="s">Living Room · Tomorrow · scheduled</div></div><span class="time">8P</span></div>
+  </div>
+  <div class="cta">＋ ADD A LISTING</div>
+  <div class="foot">Missing a channel? <u>Request it →</u></div>
+</div></div></div>
+
+<div class="surface"><h2>2 · RECEIVE PAGE <span>promo bumper</span></h2>
+<div class="phone"><div class="notch"></div><div class="screen">
+  <div class="kicker">● TONIGHT ON YOUR TV</div>
+  <div class="showart"><div class="svc">YOUTUBE TV · 2:14</div><div class="title">Chiefs vs Bills —<br>4th Qtr Highlights</div></div>
+  <div class="hdr"><p style="margin-top:10px">Programmed by <b style="color:#fff">Johnny</b> · 4 min ago</p></div>
+  <div class="screenpick">
+    <div class="tv sel">📺 Living Room TV <small>same Wi-Fi ✓</small></div>
+    <div class="tv">📺 Bedroom TV <small>same Wi-Fi ✓</small></div>
+  </div>
+  <div class="cta">▶&nbsp; PLAY</div>
+  <div class="foot">No account · No install · Nothing on this phone</div>
+</div></div></div>
+
+<div class="surface"><h2>3 · SETUP UX <span>30-second tune-in</span></h2>
+<div class="phone"><div class="notch"></div><div class="screen">
+  <div class="kicker">▲ FIRST TIME SETUP</div>
+  <div class="hdr"><h3>Tune in<br>your TV.</h3><p>Three steps, no downloads.</p></div>
+  <div class="steps">
+    <div class="step"><div class="n">1</div><p><b>Same Wi-Fi.</b> Phone and TV on the same network — that's the whole trick.</p></div>
+    <div class="step"><div class="n">2</div><p><b>Read the code</b> on your TV screen:</p></div>
+  </div>
+  <div class="code">K 7 Q 2 X A</div>
+  <div class="steps"><div class="step"><div class="n">3</div><p><b>Hit connect.</b> Done forever — the TV remembers you.</p></div></div>
+  <div class="cta">CONNECT TV</div>
+  <div class="foot">Nothing installs. Not on the phone, not on the TV.</div>
+</div></div></div>
+
+<div class="surface"><h2>4 · SENDER-SIDE AD PLACEMENT <span>post-send affiliate card</span></h2>
+<div class="phone"><div class="notch"></div><div class="screen">
+  <div class="kicker" style="color:var(--green,#30D158)">✓ TRANSMISSION COMPLETE</div>
+  <div class="hdr"><h3>It's on<br>the guide.</h3><p>Mom's TV gets it in a few seconds.</p></div>
+  <div class="adcard"><span class="tag">SPONSORED · SHOWN TO SENDERS ONLY</span><b>Hulu (With Ads) — $9.99/mo</b><p>Thousands of shows the night after they air. Start your trial.</p><div class="cta2">Claim the offer</div></div>
+  <div class="foot">Recipients never see sponsor cards — the receive flow stays ad-free. Pro removes cards for senders too.</div>
+</div></div></div>
+
+<div class="surface"><h2>5 · SUBSCRIPTION / UPSELL <span>illustrative tiers</span></h2>
+<div class="phone"><div class="notch"></div><div class="screen">
+  <div class="kicker">▲ PRIMETIME PASS</div>
+  <div class="hdr"><h3>Never miss<br>a premiere.</h3><p>Unlimited listings, zero sponsor cards.</p></div>
+  <div class="tier hot"><h4>YEARLY</h4><div class="price">$29.99<span style="font-size:14px;color:var(--gray)">/yr</span></div>
+    <ul><li>Unlimited sends</li><li>No sponsor cards</li><li>Your requests jump the queue</li></ul>
+    <div class="cta" style="margin:10px 0 0">GO YEARLY · SAVE 37%</div></div>
+  <div class="tier"><h4>MONTHLY</h4><div class="price">$3.99<span style="font-size:14px;color:var(--gray)">/mo</span></div>
+    <div class="cta" style="margin:10px 0 0;background:#2a2a30;color:#fff">GO MONTHLY</div></div>
+  <div class="foot">Free tier: 5 sends in month one. Prices illustrative design content.</div>
+</div></div></div>
+
+</body></html>
