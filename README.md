@@ -19,7 +19,7 @@ v1 is **zero-install**: everything runs in the browser.
 Supported apps live in a **configurable service registry** (`relay/services.js`): one entry per service, and the parser, the API, and the recipient page all read from it.
 
 - **Tested (v1):** YouTube (watch, Shorts, embed), Netflix, Amazon Prime Video, EWTN.
-- **Experimental (PR #18):** 19 more services, including Disney+, Hulu, Max, Peacock, and Paramount+. Mappings are best-effort until verified on real hardware, and ship gated behind that check.
+- **Experimental (merged, hardware verification pending):** 20 more services, including Disney+, Hulu, Max, Peacock, Paramount+, and YouTube TV. Mappings are best-effort until verified on real hardware.
 
 ### 🏗 Architecture & Modules
 *   **Relay Cloud Server (Node.js/Express):** Magic-link registry, deep-link parsing, same-roof device registry, support pages. Containerized for serverless **Google Cloud Run** (`relay/Dockerfile`).
@@ -56,7 +56,7 @@ node simulator/simulator.js
 ```
 
 ### 🗺 Project Status & Roadmap
-The product vision and backlog live in `docs/roadmap.md`. In flight: the experimental service expansion (PR #18), the marketing site and early-access signup (PR #19), and a draft business plan (PR #20).
+The product vision and backlog live in `docs/roadmap.md`. In flight: the marketing site and early-access signup (PR #19) and a draft business plan (PR #20). Merged: the 24-service registry (incl. YouTube TV) with a sender service-request flow.
 
 ### 🤝 Contributing
 Coordination happens on issue #15. Work lands through PRs from `failden/...` and `instinct/...` branches into `main`. Every PR gets reviewed before merge; security-sensitive changes (the trust boundary, pairing, deep links) always get a second review.
