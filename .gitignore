@@ -42,4 +42,6 @@ roku-mcp.txt
 # Firebase
 .firebase/
 
+# Local data with PII (interest signups etc.) — never commit
+relay/data/
 
