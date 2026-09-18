@@ -42,7 +42,7 @@ cd ../simulator && npm install
 
 Run the test suites:
 ```bash
-cd relay && npm test       # 48 tests across 5 suites
+cd relay && npm test
 cd ../simulator && npm test
 ```
 
