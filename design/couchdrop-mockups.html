@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Couchdrop — mobile mockups</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#101828;--blue:#2E7CF6;--green:#30D158;--paper:#F7F4EE;--slate:#8A94A6;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0b1220;font-family:Inter,system-ui,sans-serif;color:var(--ink);padding:32px 16px;}
+  h1{font-family:Nunito,sans-serif;color:#fff;text-align:center;font-size:26px;margin-bottom:6px}
+  .sub{color:var(--slate);text-align:center;font-size:13px;margin-bottom:28px}
+  .surface{margin:0 auto 40px;max-width:420px}
+  .surface>h2{font-family:Nunito,sans-serif;color:#fff;font-size:15px;margin-bottom:10px}
+  .surface>h2 span{color:var(--slate);font-weight:400;font-size:12px}
+  .phone{width:375px;max-width:100%;margin:0 auto;background:var(--paper);border-radius:44px;padding:14px 14px 22px;box-shadow:0 24px 60px rgba(0,0,0,.5);position:relative}
+  .notch{width:120px;height:26px;background:#0b1220;border-radius:14px;margin:0 auto 12px}
+  .screen{background:#fff;border-radius:32px;overflow:hidden;min-height:640px;display:flex;flex-direction:column}
+  .hdr{padding:18px 18px 8px}
+  .hdr h3{font-family:Nunito,sans-serif;font-size:22px;font-weight:800}
+  .hdr p{font-size:13px;color:var(--slate);margin-top:2px}
+  .chips{display:flex;gap:8px;padding:10px 18px;flex-wrap:wrap}
+  .chip{font-size:13px;font-weight:600;padding:9px 14px;border-radius:999px;background:#eef1f5;color:var(--ink)}
+  .chip.on{background:var(--blue);color:#fff}
+  .field{margin:6px 18px;background:#eef1f5;border-radius:14px;padding:13px 14px;font-size:13px;color:var(--slate)}
+  .sendbtn{margin:12px 18px;background:var(--blue);color:#fff;border-radius:999px;text-align:center;padding:15px;font-weight:700;font-size:16px}
+  .thread{padding:6px 18px;display:flex;flex-direction:column;gap:8px}
+  .msg{max-width:80%;padding:10px 13px;border-radius:16px;font-size:13px;line-height:1.4}
+  .msg.me{align-self:flex-end;background:var(--blue);color:#fff;border-bottom-right-radius:4px}
+  .msg.them{align-self:flex-start;background:#eef1f5;border-bottom-left-radius:4px}
+  .msg .meta{font-size:11px;opacity:.75;margin-top:4px}
+  .bigplay{margin:14px 18px;background:var(--green);color:#06270f;border-radius:18px;text-align:center;padding:18px;font-family:Nunito,sans-serif;font-weight:800;font-size:17px}
+  .tvopt{margin:0 18px 8px;border:1.5px solid #e2e7ee;border-radius:14px;padding:12px 14px;font-size:14px;font-weight:600;display:flex;justify-content:space-between;align-items:center}
+  .tvopt small{color:var(--slate);font-weight:400}
+  .trust{margin:10px 18px;background:#eef7ee;border:1px solid #cdeccd;border-radius:14px;padding:12px 14px;font-size:13px}
+  .codebox{display:flex;gap:8px;justify-content:center;padding:14px 18px}
+  .codebox i{width:44px;height:52px;border:2px solid #dfe4ec;border-radius:12px;font-style:normal;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700}
+  .codebox i.fill{border-color:var(--blue);color:var(--blue)}
+  .adcard{margin:12px 18px;border:1px dashed #c9d2de;border-radius:16px;padding:14px;font-size:13px}
+  .adcard .tag{font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--slate)}
+  .adcard b{display:block;margin:6px 0 2px;font-size:14px}
+  .adcard .cta{margin-top:10px;background:var(--ink);color:#fff;border-radius:10px;text-align:center;padding:10px;font-weight:600;font-size:13px}
+  .plan{margin:10px 18px;border:2px solid var(--blue);border-radius:16px;padding:16px}
+  .plan h4{font-family:Nunito,sans-serif;font-size:17px}
+  .plan .price{font-size:28px;font-weight:800;font-family:Nunito,sans-serif;margin:6px 0}
+  .plan ul{list-style:none;font-size:13px;color:#3c4656;margin:8px 0}
+  .plan li{margin:5px 0}
+  .plan li::before{content:"✓ ";color:var(--green);font-weight:700}
+  .meter{margin:10px 18px;font-size:12px;color:var(--slate)}
+  .bar{height:8px;background:#e6eaf0;border-radius:99px;margin-top:6px;overflow:hidden}
+  .bar i{display:block;height:100%;width:60%;background:var(--blue);border-radius:99px}
+  .foot{margin-top:auto;padding:14px 18px 18px;font-size:11px;color:var(--slate);text-align:center}
+</style></head><body>
+<h1>Couchdrop</h1>
+<p class="sub">Concept 1 · mobile-first mockups · five surfaces</p>
+
+<div class="surface"><h2>1 · Send page <span>contact-first compose</span></h2>
+<div class="phone"><div class="notch"></div><div class="screen">
+  <div class="hdr"><h3>Send to…</h3><p>Pick a person, drop a link, done.</p></div>
+  <div class="chips"><span class="chip on">Mom</span><span class="chip">Dad</span><span class="chip">Lake House</span><span class="chip">+ New</span></div>
+  <div class="field">🔗 Paste a video link…</div>
+  <div class="field" style="color:#c3cad4">Add a note (optional)</div>
+  <div class="sendbtn">Send&nbsp;&nbsp;➤</div>
+  <div class="thread">
+    <div class="msg me">West Wing S1E4<div class="msg meta">You → Mom · 8:42 PM · ✓✓ played</div></div>
+    <div class="msg them">Loved it!! Send the next one 😄<div class="msg meta">Mom · 9:15 PM</div></div>
+  </div>
+  <div class="foot">Missing a service? <u>Request it →</u></div>
+</div></div></div>
+
+<div class="surface"><h2>2 · Receive page <span>gets a message, hits play</span></h2>
+<div class="phone"><div class="notch"></div><div class="screen">
+  <div class="hdr"><h3>New video! 🎬</h3><p>Johnny sent this 4 min ago</p></div>
+  <div class="thread">
+    <div class="msg them">"You have GOT to see this touchdown run"<div class="msg meta">Johnny</div></div>
+    <div class="msg them" style="font-weight:700">🏈 Chiefs vs Bills — 4th Qtr highlights<div class="msg meta">YouTube TV · 2:14</div></div>
+  </div>
+  <div class="bigplay">▶&nbsp; Play on Living Room TV</div>
+  <div class="tvopt">Bedroom TV <small>same Wi-Fi ✓</small></div>
+  <div class="tvopt">Lake House <small>last seen 2d ago</small></div>
+  <div class="foot">Nothing installs on this phone. Your phone just tells the TV what to play.</div>
+</div></div></div>
+
+<div class="surface"><h2>3 · Setup UX <span>TV code + trust line</span></h2>
+<div class="phone"><div class="notch"></div><div class="screen">
+  <div class="hdr"><h3>Add your TV</h3><p>One-time, about 30 seconds.</p></div>
+  <div class="trust">🔒 <b>Nothing installs on this phone</b> — and nothing installs on the TV either. Your phone and TV just need the same Wi-Fi.</div>
+  <p style="padding:12px 18px 0;font-size:13px;font-weight:600">Enter the 6-letter code shown on your TV</p>
+  <div class="codebox"><i class="fill">K</i><i class="fill">7</i><i class="fill">Q</i><i></i><i></i><i></i></div>
+  <div class="sendbtn">Connect TV</div>
+  <div class="foot">No account · No app download · No tech support calls to your kids</div>
+</div></div></div>
+
+<div class="surface"><h2>4 · Sender-side ad placement <span>post-send affiliate card</span></h2>
+<div class="phone"><div class="notch"></div><div class="screen">
+  <div class="hdr"><h3>On its way! 🚀</h3><p>Mom will get it in a few seconds.</p></div>
+  <div class="thread"><div class="msg me">West Wing S1E4<div class="msg meta">You → Mom · just now · ✓ sent</div></div></div>
+  <div class="adcard"><span class="tag">SPONSORED · SENDER ONLY</span><b>Cut cable but keep the shows — Paramount+ from $7.99/mo</b><span style="color:var(--slate)">Stream Yellowstone, Survivor &amp; live CBS.</span><div class="cta">See the deal</div></div>
+  <div class="foot">Recipients never see ads — this card is only ever shown to the sender, after sending. Pro removes it.</div>
+</div></div></div>
+
+<div class="surface"><h2>5 · Subscription / upsell <span>illustrative tiers</span></h2>
+<div class="phone"><div class="notch"></div><div class="screen">
+  <div class="hdr"><h3>Couchdrop Pro</h3><p>For households that share a lot.</p></div>
+  <div class="meter">Free sends used this month · 3 of 5<div class="bar"><i></i></div></div>
+  <div class="plan"><h4>Pro Monthly</h4><div class="price">$3.99<span style="font-size:14px;color:var(--slate)">/mo</span></div>
+    <ul><li>Unlimited sends</li><li>No sponsor cards</li><li>Priority new-service requests</li></ul>
+    <div class="sendbtn" style="margin:10px 0 0">Go Pro</div></div>
+  <div class="plan" style="border-color:#dfe4ec"><h4>Pro Yearly</h4><div class="price">$29.99<span style="font-size:14px;color:var(--slate)">/yr</span></div>
+    <div class="sendbtn" style="margin:10px 0 0;background:var(--ink)">Go yearly · save 37%</div></div>
+  <div class="foot">Prices shown are illustrative design content.</div>
+</div></div></div>
+
+</body></html>
