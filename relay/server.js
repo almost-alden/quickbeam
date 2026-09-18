@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const crypto = require('crypto');
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const { registerDevice, getDevicesByPublicIp, findDeviceByPairingCode } = require('./registry');
 const { parseUrl, scrapeTitle } = require('./deeplink');
@@ -143,9 +144,15 @@ app.post('/api/support', (req, res) => {
 });
 
 // Early-access interest signup (marketing site form).
-// Stores signups as JSON lines in relay/data/interest.jsonl (gitignored: PII never lands in git).
-// Contact details are stored but never written to the console log.
-const INTEREST_FILE = path.join(__dirname, 'data', 'interest.jsonl');
+// Stores signups as JSON lines OUTSIDE the repo directory (PII must never
+// land in git, even by accident: a gitignored file inside the repo is one
+// `git add -f` or packaging slip away from committed contact details).
+// Override with the INTEREST_FILE env var; default is ~/.quickbeam/interest.jsonl.
+// NOTE (Cloud Run): the container filesystem is ephemeral per instance. If
+// signups must survive instance recycling, point INTEREST_FILE at persistent
+// storage or forward records elsewhere before going live.
+const INTEREST_FILE = process.env.INTEREST_FILE ||
+    path.join(os.homedir(), '.quickbeam', 'interest.jsonl');
 const KNOWN_SERVICE_IDS = new Set(SERVICES.map((s) => s.id));
 const interestHits = new Map(); // ip -> [timestamps]
 
@@ -235,3 +242,4 @@ if (require.main === module) {
 }
 
 module.exports = app;
+module.exports.interestFilePath = INTEREST_FILE;
