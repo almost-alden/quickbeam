@@ -49,19 +49,26 @@ the first paid revenue comes from **hospitality**; advertising starts as
 
 ## 3. Freemium & trial model (phased)
 
-### Phase 1 — Free + usage-capped Pro (build now)
-- **Free:** 5 launched links/month, 1 TV per recipient, standard link expiry.
-- **Pro — $3.99/mo or $29.99/yr:** unlimited launches, multi-TV, link history.
-- **Why usage caps:** they bite exactly when the product is mission-critical
-  (sender hits "5 of 5 used" mid-family-movie-night). Research: usage caps convert
-  better than feature gating; 14-day trials are the modal length and convert ~2x
-  freemium. Infra is just a counter — shippable now.
+### Phase 1 — Free (declining quota) + Pro (build now)
+- **Free:** 5 launches in month 1, 2/month in months 2–3, 1/month from month 4 on.
+  1 TV per recipient, standard link expiry. Supported by sender-side affiliate/ad
+  modules — never on the recipient's TV. The declining quota is the conversion
+  engine: it bites exactly when the product has become a habit.
+- **Pro — $3.99/mo or $29.99/yr:** unlimited launches, multi-TV, link history,
+  **no ads, ever.**
+- Pricing clarification (2026-09-17): there is ONE paid tier. The earlier
+  $1.99/mo standalone ad-free tier is dropped — ad-free = Pro at $3.99/mo.
+  Free (capped, ad-supported) or Pro (unlimited, ad-free). Simple choice.
 
-### Phase 2 — Ad-supported free, paid removes ads
-- **Free (ad-supported):** sender-side affiliate/ad modules only — never on the
-  recipient's TV (founder constraint).
-- **Ad-free tier — $1.99/mo or $14.99/yr**, anchored to Roku-remote-app IAP norms
-  ($3–4 one-time).
+### Ad segmentation — the demographic screen (consideration, not v1)
+Founder's line holds: **no ads on the recipient experience.** Refinement for
+later: segment by role.
+- **Pure recipients** (never send): no ads, ever — the trust promise that makes
+  grandparents say yes.
+- **Hybrid users** (sometimes send): sender-side ad modules may appear when they
+  are in the receiving role. They already know the product; the awkwardness the
+  research cited as a conversion lever applies to them, not to grandma.
+- This keeps the brand promise intact while recovering the conversion upside.
 
 ### Phase 3 — Reverse trial (post-PMF)
 - 14 days of full Pro on signup, then drop to the thin free tier. Highest
@@ -113,15 +120,25 @@ a config flip, not a rebuild.
 - **Data moat (careful):** aggregated, anonymized "what's being sent" trends could
   inform programming partnerships — only with clear consent, never PII.
 
+## 6b. Watch intelligence (pie in the sky — logged for consideration, NOT v1)
+- **Ad matching:** aggregate, anonymized receive/watch history improves affiliate
+  targeting (e.g. a heavy Disney+ household sees Disney+ bundle offers first).
+- **Sender recommendations:** "Mom loved X — she'd probably like Y," based on
+  recipient taste, previous sends, and recent watches. Turns the sender into a
+  hero and drives repeat usage.
+- **Constraints:** explicit consent; never PII-based targeting of recipients;
+  recipient-facing surfaces stay ad-free per §3. This is a post-PMF investment,
+  not a launch feature.
+
 ## 7. Open questions (for instinct)
 
 1. Consumer WTP is inferred, not Quickbeam-specific — validate via the interest
    form with price anchors.
 2. Hospitality pricing needs 3–5 host interviews.
-3. **Tension:** the founder constrained ads to sender-side only; one research
-   thread argued recipient-page ads convert better (social awkwardness as a
-   lever). Recommendation here: hold the founder's line for v1 — trust with
-   grandparents is the brand. Revisit post-PMF.
-4. Tier naming and the exact free-launch cap (5/mo is the proposal).
-5. Whether the Pro price anchor should be $3.99/mo or lower to match the
-   ~$3–5/mo consumer WTP band.
+3. ~~Ad-placement tension~~ — **resolved 2026-09-17 by the founder:** sender-side
+   only holds; hybrid-user exception (ads when a sender is receiving) logged as
+   a post-v1 consideration (§3).
+4. ~~Pro price anchor~~ — **resolved 2026-09-17:** one paid tier, Pro at $3.99/mo
+   ($29.99/yr) = unlimited + ad-free. Standalone $1.99 ad-free tier dropped.
+5. ~~Free cap~~ — **resolved 2026-09-17:** declining quota, 5 → 2 → 1 launches/mo.
+6. Tier naming ("Pro" vs alternatives) — still open, instinct's call.
