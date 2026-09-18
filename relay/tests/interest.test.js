@@ -105,4 +105,10 @@ describe('POST /api/interest', () => {
         expect(res.body.error).toMatch(/too many/i);
         expect(savedRecords).toHaveLength(10);
     });
+
+    it('stores signups outside the repo directory by default', () => {
+        const repoRoot = require('path').resolve(__dirname, '..', '..');
+        expect(app.interestFilePath).toBeTruthy();
+        expect(app.interestFilePath.startsWith(repoRoot + require('path').sep)).toBe(false);
+    });
 });
