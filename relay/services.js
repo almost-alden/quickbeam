@@ -15,12 +15,15 @@
 //
 // Verification status (2026-09-17): appIds were verified against the Roku
 // Channel Store (appstore:store_id meta tags), real-device ECP /query/apps
-// dumps, or 3+ independent sources. Crunchyroll, Pandora, and YouTube TV are
-// deliberately EXCLUDED: their appIds could not be verified (a wrong appId
-// launches the wrong app on the TV) and YouTube TV's dedicated Roku app was
-// delisted in 2021. contentId/mediaType mappings are best-effort from web
-// share-URL formats; per-channel deep-link behavior still needs the on-device
-// hardware check (GET /query/apps on a real Roku) before v1 ships.
+// dumps, or 3+ independent sources. YouTube TV (195316) was re-verified
+// 2026-09-17 against the channel-store listing plus two independent writeups
+// after its December 2021 return to the store; its ECP deep-link format
+// (contentId from the tv.youtube.com address bar, mediaType=live) comes from
+// a documented working example. contentId/mediaType mappings are best-effort
+// from web share-URL formats; per-channel deep-link behavior still needs the
+// on-device hardware check (GET /query/apps on a real Roku) before v1 ships.
+// NOTE: findService is first-match, so 'youtube-tv' must stay ABOVE 'youtube'
+// below — tv.youtube.com would otherwise suffix-match youtube.com's domain.
 
 function hostMatches(hostname, domain) {
     // Exact-or-suffix match only: prevents lookalike hostnames such as
@@ -29,6 +32,23 @@ function hostMatches(hostname, domain) {
 }
 
 const SERVICES = [
+    {
+        id: 'youtube-tv',
+        name: 'YouTube TV',
+        appId: '195316',
+        domains: ['tv.youtube.com'],
+        parse(parsed) {
+            // Best-effort: contentId is the program id from the
+            // tv.youtube.com address bar; launch uses mediaType=live.
+            let contentId = parsed.searchParams.get('v') || '';
+            if (!contentId) {
+                const m = parsed.pathname.match(/\/watch\/([A-Za-z0-9_-]+)/);
+                if (m) contentId = m[1];
+            }
+            if (!contentId) return null;
+            return { contentId, mediaType: 'live' };
+        }
+    },
     {
         id: 'youtube',
         name: 'YouTube',

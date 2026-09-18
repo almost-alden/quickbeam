@@ -686,6 +686,24 @@
         <div class="input-group">
             <input type="text" id="videoUrl" placeholder="Paste YouTube, Netflix, or Prime link">
         </div>
+        <div style="text-align: right; margin-top: -0.35rem; margin-bottom: 0.75rem;">
+            <a href="#" onclick="toggleServiceRequest(event)" style="font-size: 0.75rem; color: var(--text-secondary); text-decoration: none;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-secondary)'">Missing a service? Request it →</a>
+        </div>
+        <div id="service-request-panel" style="display: none; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 0.9rem; margin-bottom: 0.9rem;">
+            <label style="font-size: 0.8rem; font-weight: 600;">Request a service</label>
+            <p style="font-size: 0.75rem; color: var(--text-secondary); margin: 0.25rem 0 0.6rem;">Tell us which streaming service to add next. We'll prioritize the most-requested.</p>
+            <div class="input-group" style="margin-bottom: 0.5rem;">
+                <input type="text" id="reqServiceName" placeholder="Service name" maxlength="80">
+            </div>
+            <div class="input-group" style="margin-bottom: 0.6rem;">
+                <input type="text" id="reqContact" placeholder="Email or phone (optional, for updates)" maxlength="120">
+            </div>
+            <button class="btn-primary" onclick="submitServiceRequest()" style="padding: 0.6rem; font-size: 0.85rem; height: auto;">
+                <span>Send request</span>
+            </button>
+            <div id="reqResult" style="font-size: 0.8rem; margin-top: 0.5rem; display: none;"></div>
+            <p style="font-size: 0.7rem; color: var(--text-secondary); margin: 0.6rem 0 0;">Contact info is only used to notify you if this service gets added. See our <a href="/privacy.html" style="color: var(--text-secondary);">Privacy Policy</a>.</p>
+        </div>
 
         <label for="videoTitle">Video Title (Optional)</label>
         <div class="input-group">
@@ -912,11 +930,55 @@
                 if (data.relayUrl) {
                     document.getElementById('result').style.display = 'block';
                     document.getElementById('outputLink').innerText = data.relayUrl;
+                } else if (data.error === 'URL not supported yet') {
+                    document.getElementById('service-request-panel').style.display = 'block';
+                    document.getElementById('reqServiceName').placeholder = 'Service name (e.g. the site your link was from)';
+                    alert('That link isn\'t from a supported service yet. Request it below and we\'ll prioritize it.');
+                    document.getElementById('service-request-panel').scrollIntoView({ behavior: 'smooth', block: 'center' });
                 } else {
                     alert("Error: " + (data.error || "Unknown error"));
                 }
             } catch (e) {
                 alert("Failed to connect to Relay server.");
+            }
+        }
+
+        // Service request: "don't see your service? request it"
+        function toggleServiceRequest(event) {
+            event.preventDefault();
+            const panel = document.getElementById('service-request-panel');
+            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        }
+
+        async function submitServiceRequest() {
+            const service = document.getElementById('reqServiceName').value.trim();
+            const contact = document.getElementById('reqContact').value.trim();
+            const result = document.getElementById('reqResult');
+            result.style.display = 'block';
+            if (service.length < 2) {
+                result.style.color = '#ff8a8a';
+                result.innerText = 'Please name the service you want added.';
+                return;
+            }
+            try {
+                const res = await fetch('/api/service-request', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ service, contact })
+                });
+                const data = await res.json();
+                if (data.status === 'ok') {
+                    result.style.color = '#7dffa8';
+                    result.innerText = `Thanks! "${service}" is on the request list.`;
+                    document.getElementById('reqServiceName').value = '';
+                    document.getElementById('reqContact').value = '';
+                } else {
+                    result.style.color = '#ff8a8a';
+                    result.innerText = 'Error: ' + (data.error || 'Unknown error');
+                }
+            } catch (e) {
+                result.style.color = '#ff8a8a';
+                result.innerText = 'Failed to connect to Relay server.';
             }
         }
 
