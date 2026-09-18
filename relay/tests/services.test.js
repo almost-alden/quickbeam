@@ -4,6 +4,7 @@ const { parseUrl } = require('../deeplink');
 describe('service registry', () => {
     test('publicServices exposes every registered service as { id, name, appId }', () => {
         expect(publicServices()).toEqual([
+            { id: 'youtube-tv', name: 'YouTube TV', appId: '195316' },
             { id: 'youtube', name: 'YouTube', appId: '837' },
             { id: 'netflix', name: 'Netflix', appId: '12' },
             { id: 'prime-video', name: 'Amazon Prime', appId: '13' },
@@ -40,6 +41,7 @@ describe('service registry', () => {
 
     test('every registered service parses a representative URL end-to-end via parseUrl', () => {
         const samples = {
+            'youtube-tv': 'https://tv.youtube.com/watch/k-KlMzmHTAo',
             youtube: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
             netflix: 'https://www.netflix.com/watch/81234567',
             'prime-video': 'https://www.amazon.com/dp/B0ABC123',
@@ -74,6 +76,9 @@ describe('service registry', () => {
     });
 
     test('new services extract the exact expected contentId', () => {
+        expect(parseUrl('https://tv.youtube.com/watch/k-KlMzmHTAo').contentId).toBe('k-KlMzmHTAo');
+        expect(parseUrl('https://tv.youtube.com/watch/k-KlMzmHTAo').mediaType).toBe('live');
+        expect(parseUrl('https://tv.youtube.com/')).toBeNull();
         expect(parseUrl('https://www.disneyplus.com/video/bdb127ae-08b5-4b5a-8dd6-f2fede81006b').contentId)
             .toBe('bdb127ae-08b5-4b5a-8dd6-f2fede81006b');
         expect(parseUrl('https://www.hulu.com/watch/143503/x').contentId).toBe('143503');
@@ -95,6 +100,9 @@ describe('service registry', () => {
 
     test('findService accepts legitimate subdomains and rejects lookalike hostnames', () => {
         expect(findService(new URL('https://m.youtube.com/watch?v=x')).id).toBe('youtube');
+        // tv.youtube.com must resolve to youtube-tv, not youtube (first-match order matters).
+        expect(findService(new URL('https://tv.youtube.com/watch/k-KlMzmHTAo')).id).toBe('youtube-tv');
+        expect(findService(new URL('https://www.youtube.com/watch?v=x')).id).toBe('youtube');
         expect(findService(new URL('https://youtube.com.evil.com/watch?v=x'))).toBeNull();
         expect(findService(new URL('https://notnetflix.com/watch/1'))).toBeNull();
     });

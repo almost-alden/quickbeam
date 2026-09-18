@@ -77,6 +77,61 @@ app.get('/api/services', (req, res) => {
     res.json(publicServices());
 });
 
+// 2c. Service requests from senders ("don't see your service? request it").
+// Stored as JSON lines OUTSIDE the repo directory (contact details must never
+// land in git). Override with the SERVICE_REQUEST_FILE env var.
+// NOTE (Cloud Run): the container filesystem is ephemeral per instance —
+// same go-live consideration as the pilot-signup store.
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const SERVICE_REQUEST_FILE = process.env.SERVICE_REQUEST_FILE ||
+    path.join(os.homedir(), '.quickbeam', 'service-requests.jsonl');
+const serviceRequestHits = new Map(); // ip -> [timestamps]
+
+function serviceRequestRateLimited(ip) {
+    const now = Date.now();
+    const windowStart = now - 60 * 60 * 1000;
+    const hits = (serviceRequestHits.get(ip) || []).filter((t) => t > windowStart);
+    hits.push(now);
+    serviceRequestHits.set(ip, hits);
+    return hits.length > 10;
+}
+
+app.post('/api/service-request', (req, res) => {
+    const ip = getClientIp(req);
+    if (serviceRequestRateLimited(ip)) {
+        return res.status(429).json({ error: 'Too many requests. Please try again later.' });
+    }
+
+    const { service, contact } = req.body || {};
+    const cleanService = String(service || '').trim().slice(0, 80);
+    const cleanContact = String(contact || '').trim().slice(0, 120);
+
+    if (cleanService.length < 2) {
+        return res.status(400).json({ error: 'Please name the service you want added.' });
+    }
+    if (cleanContact && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(cleanContact) && cleanContact.replace(/\D/g, '').length < 7) {
+        return res.status(400).json({ error: 'Contact must be a valid email or phone number.' });
+    }
+
+    const record = {
+        ts: new Date().toISOString(),
+        service: cleanService,
+        ...(cleanContact ? { contact: cleanContact } : {}),
+    };
+    try {
+        fs.mkdirSync(path.dirname(SERVICE_REQUEST_FILE), { recursive: true });
+        fs.appendFileSync(SERVICE_REQUEST_FILE, JSON.stringify(record) + '\n');
+    } catch (e) {
+        return res.status(500).json({ error: 'Could not save your request. Please try again.' });
+    }
+
+    // Log the event without contact details.
+    console.log(JSON.stringify({ event: 'SERVICE_REQUEST', service: cleanService }));
+    res.json({ status: 'ok' });
+});
+
 // 3. Resolve Magic Link (from Recipient)
 app.get('/api/resolve/:linkId', (req, res) => {
     const linkId = req.params.linkId;
@@ -160,3 +215,4 @@ if (require.main === module) {
 }
 
 module.exports = app;
+module.exports.serviceRequestFilePath = SERVICE_REQUEST_FILE;
