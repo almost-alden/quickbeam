@@ -1,9 +1,18 @@
-const CACHE_NAME = 'quickbeam-cache-v1';
+const CACHE_NAME = 'quickbeam-cache-v2';
 const ASSETS = [
   '/',
   '/index.html',
+  '/share.html',
+  '/send.html',
   '/magic.html',
-  '/images/icon-512.jpg'
+  '/images/icon-192.png',
+  '/images/icon-512.jpg',
+  '/js/registry-client.js',
+  '/js/share.js',
+  '/js/qb.js',
+  '/js/firestore-rest.js',
+  '/js/firebase-config.js',
+  '/js/roku-probe.js'
 ];
 
 // Install Service Worker and cache resources

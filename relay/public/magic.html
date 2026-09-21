@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quickbeam | Welcome!</title>
+    <title>Couchbeam | Welcome!</title>
     <!-- PWA & Mobile Optimization -->
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#8b5cf6">
@@ -11,10 +11,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="/images/icon-512.jpg">
 
-    <!-- Modern typography -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- System font stacks only — no webfont imports, per project rule. -->
     
     <style>
         :root {
@@ -44,7 +41,7 @@
         }
 
         body {
-            font-family: 'Outfit', sans-serif;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
             background-color: var(--bg-color);
             background-image: 
                 radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
@@ -521,6 +518,16 @@
         <a href="/terms.html" style="color: var(--text-secondary); text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-secondary)'">Terms of Use</a>
     </div>
 
+    <!-- Couchbeam home-test client modules: registry, parsers, Firestore REST
+         (no third-party SDK), mixed-content-safe Roku probing, data layer.
+         qb.js tries the Node relay's /api first and falls back to Firestore
+         when the pages are served statically (Firebase Hosting). -->
+    <script src="/js/registry-client.js"></script>
+    <script src="/js/share.js"></script>
+    <script src="/js/firebase-config.js"></script>
+    <script src="/js/firestore-rest.js"></script>
+    <script src="/js/roku-probe.js"></script>
+    <script src="/js/qb.js"></script>
     <script>
         const linkId = window.location.pathname.split('/').pop();
         let activeDevice = null;
@@ -543,15 +550,21 @@
                 linkData = null;
                 document.getElementById('sender-msg').innerText = "Connect to Roku TV ⚡️";
                 document.getElementById('instruction').innerText = "Pair this TV to your phone to receive videos.";
-                document.getElementById('content-info').innerText = "Quickbeam TV Pairing";
+                document.getElementById('content-info').innerText = "Couchbeam TV Pairing";
                 autoDetectedDevices = [];
                 initDeviceSelection();
                 return;
             }
 
             try {
-                const res = await fetch(`/api/resolve/${linkId}`);
-                linkData = await res.json();
+                // Data layer (js/qb.js): tries the Node relay's /api first,
+                // falls back to Firestore when served statically. No sender
+                // name is stored in the home-test model (no-PII rule), so the
+                // greeting always uses the fallback.
+                linkData = await window.Quickbeam.getMagicLink(linkId);
+                if (linkData.error) {
+                    throw new Error(linkData.error);
+                }
                 
                 document.getElementById('sender-msg').innerText = `${linkData.senderName || 'Someone'} sent you a video!`;
                 document.getElementById('instruction').innerText = `${linkData.senderName || 'Your friend'} wants to show you this on your TV.`;
@@ -582,10 +595,10 @@
         // Auto-resolve pairing codes from SMS/Contact config
         async function resolvePairingCode(code) {
             try {
-                const res = await fetch(`/api/resolve-code/${code}`);
-                const data = await res.json();
-                if (data.status === 'paired' && data.device) {
-                    const dev = data.device;
+                // Data layer (js/qb.js): relay /api first, Firestore fallback.
+                const data = await window.Quickbeam.resolvePairingCode(code);
+                if (!data.error && data.localIp) {
+                    const dev = { localIp: data.localIp, deviceName: data.deviceName };
                     // Add to manual devices list if not already present
                     const manualDevices = getManualDevices();
                     if (!manualDevices.some(d => d.ip === dev.localIp)) {
@@ -972,6 +985,23 @@
         }
 
         async function pingAndConfirm(ip) {
+            // Mixed-content-safe discovery (js/roku-probe.js): on https: pages
+            // (Firebase Hosting) fetch() to http://<lan-ip>:8060 is blocked as
+            // mixed content, so automatic probing is impossible. Record the
+            // address as an unverified candidate instead — the existing
+            // post-launch confirm-prompt flow verifies it with the user.
+            var probe = window.QuickbeamProbe;
+            if (probe && probe.probeStrategy(window.location.protocol) === 'manual-confirm') {
+                if (probe.isPrivateIPv4(ip)) {
+                    const manualDevices = getManualDevices();
+                    if (!manualDevices.some(d => d.ip === ip)) {
+                        manualDevices.push({ name: 'Roku TV (tap to verify)', ip: ip });
+                        saveManualDevices(manualDevices);
+                        renderDeviceList(manualDevices);
+                    }
+                }
+                return;
+            }
             try {
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 1500);
