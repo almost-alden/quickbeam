@@ -5,18 +5,27 @@
 //
 //   * Default deny: nothing is readable or writable unless a rule below allows it.
 //   * Capability-URL reads: a document is readable ONLY by its unguessable id
-//     (128-bit random for magic links). list/query are forbidden everywhere,
-//     so ids can never be enumerated.
+//     (128-bit random for magic links and device registrations). list/query
+//     are forbidden everywhere, so ids can never be enumerated.
 //   * Validated creates: every field is type- and shape-checked; unknown
 //     fields are rejected (keys().hasOnly).
-//   * No client updates or deletes. Expiry is enforced by the expiresAt
-//     timestamp, which clients must honor (see relay/public/js/qb.js), plus a
-//     Firestore TTL policy on expiresAt (set in the console; documented in
-//     docs/firebase-spark-launch.md).
-//   * No PII by construction: the magic-link model has no sender name,
-//     contact, or identifier fields at all — there is nothing to leak.
+//   * No client updates or deletes. Expiry is enforced client-side via the
+//     expiresAt timestamp, which clients must honor (see relay/public/js/qb.js).
+//     Expired documents REMAIN STORED until the owner deletes them manually in
+//     the console — the Spark plan has no free TTL deletes (see
+//     https://firebase.google.com/docs/firestore/pricing). Bounded
+//     accumulation is accepted for the home test.
+//   * Device/network data is real data: device docs store a LAN IP and a TV
+//     label. No contact, signup, postal-code, analytics, or sender-identity
+//     fields exist anywhere in the model — the exact inventory is in
+//     docs/firebase-spark-launch.md ("Data inventory").
 //   * The devices collection only accepts RFC 1918 LAN addresses, so the store
 //     can never be abused to aim a victim's browser at an arbitrary host.
+//   * Pairing is by LINK, not typed code: a device registration id is the
+//     unguessable token, and the home browser shares a pairing link
+//     (/magic.html?pair=<deviceId>) that the sender's device opens to claim it.
+//     There is no six-character cloud pairing code — short codes are not
+//     capability tokens.
 
 rules_version = '2';
 
@@ -60,12 +69,14 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
-    // --- Devices: home TV registrations written by the home browser. ---
+    // --- Devices: home TV registrations written by the home browser.
+    // Paired via pairing LINK: the unguessable deviceId IS the token, shared
+    // as /magic.html?pair=<deviceId>. No short-code collection exists.
     match /devices/{deviceId} {
-      allow get: if deviceId.matches('^[A-Za-z0-9_-]{1,64}$');
+      allow get: if deviceId.matches('^[A-Za-z0-9_-]{20,32}$');
       allow list: if false;
-      allow create: if deviceId.matches('^[A-Za-z0-9_-]{1,64}$')
-        && request.resource.data.keys().hasOnly(['localIp', 'deviceName', 'createdAt'])
+      allow create: if deviceId.matches('^[A-Za-z0-9_-]{20,32}$')
+        && request.resource.data.keys().hasOnly(['localIp', 'deviceName', 'createdAt', 'expiresAt'])
         && request.resource.data.localIp is string
         && (request.resource.data.localIp.matches('^10\\.([0-9]{1,3}\\.){2}[0-9]{1,3}$')
           || request.resource.data.localIp.matches('^192\\.168\\.([0-9]{1,3}\\.)[0-9]{1,3}$')
@@ -73,23 +84,11 @@ service cloud.firestore {
         && request.resource.data.deviceName is string
         && request.resource.data.deviceName.size() >= 1
         && request.resource.data.deviceName.size() <= 80
-        && request.resource.data.createdAt is timestamp;
-      allow update, delete: if false;
-    }
-
-    // --- Pairing codes: short-lived (1h) claims mapping a 6-char code to a device. ---
-    match /pairing_codes/{code} {
-      allow get: if code.matches('^[A-Z0-9]{6}$');
-      allow list: if false;
-      allow create: if code.matches('^[A-Z0-9]{6}$')
-        && request.resource.data.keys().hasOnly(['deviceId', 'createdAt', 'expiresAt'])
-        && request.resource.data.deviceId is string
-        && request.resource.data.deviceId.matches('^[A-Za-z0-9_-]{1,64}$')
         && request.resource.data.createdAt is timestamp
         && request.resource.data.expiresAt is timestamp
         && request.resource.data.expiresAt > request.resource.data.createdAt
         && request.resource.data.expiresAt
-             <= request.resource.data.createdAt + duration.value(65, 'm');
+             <= request.resource.data.createdAt + duration.value(30, 'd');
       allow update, delete: if false;
     }
   }

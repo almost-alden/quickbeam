@@ -137,6 +137,9 @@
     // --- Id generators ---
 
     // 128-bit crypto-random id, base64url (22 chars). Unguessable capability URLs.
+    // Used for magic links AND device registrations (pairing links) — both
+    // are read by unguessable id, so both need the same entropy. There is no
+    // short pairing-code generator: short codes are not capability tokens.
     function newMagicLinkId() {
         var bytes = new Uint8Array(16);
         var cryptoObj = (typeof crypto !== 'undefined' && crypto.getRandomValues)
@@ -147,19 +150,6 @@
         bytes.forEach(function (b) { bin += String.fromCharCode(b); });
         var b64 = typeof btoa === 'function' ? btoa(bin) : Buffer.from(bin, 'binary').toString('base64');
         return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-    }
-
-    // 6-char pairing code, unambiguous alphabet (no 0/O, 1/I/L).
-    function newPairingCode() {
-        var alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-        var bytes = new Uint8Array(6);
-        var cryptoObj = (typeof crypto !== 'undefined' && crypto.getRandomValues)
-            ? crypto
-            : (typeof require === 'function' ? require('crypto').webcrypto : null);
-        cryptoObj.getRandomValues(bytes);
-        var out = '';
-        bytes.forEach(function (b) { out += alphabet[b % alphabet.length]; });
-        return out;
     }
 
     var api = {
@@ -173,7 +163,7 @@
         createDoc: createDoc,
         getDoc: getDoc,
         newMagicLinkId: newMagicLinkId,
-        newPairingCode: newPairingCode
+        newDeviceId: newMagicLinkId // same 128-bit capability shape for devices
     };
 
     if (typeof module !== 'undefined' && module.exports) {

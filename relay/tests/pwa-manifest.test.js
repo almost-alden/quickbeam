@@ -44,3 +44,24 @@ describe('PWA manifest', () => {
         expect(manifest.theme_color).toBe('#2e7cf6');
     });
 });
+
+describe('manifest serving (finding 5)', () => {
+    const PUBLIC_DIR = path.join(__dirname, '..', 'public');
+
+    test('firebase.json leaves /manifest.json to static hosting (no rewrite)', () => {
+        const fb = JSON.parse(
+            fs.readFileSync(path.join(__dirname, '..', '..', 'firebase.json'), 'utf8')
+        );
+        const sources = (fb.hosting.rewrites || []).map((r) => r.source);
+        expect(sources.some((s) => /manifest/.test(s))).toBe(false);
+    });
+
+    test('every served page references the actual committed /manifest.json path', () => {
+        const pages = ['index.html', 'share.html', 'send.html', 'magic.html',
+            'about.html', 'privacy.html', 'terms.html', 'support.html'];
+        pages.forEach((p) => {
+            const html = fs.readFileSync(path.join(PUBLIC_DIR, p), 'utf8');
+            expect(html).toContain('<link rel="manifest" href="/manifest.json">');
+        });
+    });
+});

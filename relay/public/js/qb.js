@@ -10,13 +10,23 @@
 // error or non-JSON response, e.g. the hosting 404 page) — a JSON error from
 // the relay (unknown link, expired link) is respected, not retried.
 //
-// No PII is collected: magic-link docs carry no sender name or contact info.
+// No contact, postal-code, signup, analytics, or sender-identity fields exist
+// in the model (see docs/firebase-spark-launch.md "Data inventory"). Device docs do
+// store a LAN IP and a TV label — device/network data, handled as test-only
+// data for the family home test.
 
 (function () {
     'use strict';
 
     var MAGIC_LINK_TTL_MS = 24 * 60 * 60 * 1000; // 24h, mirrors relay LINK_TTL
-    var PAIRING_CODE_TTL_MS = 60 * 60 * 1000;    // 1h
+    var DEVICE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30d home-test device registrations
+
+    // Client-enforced expiry: Firestore TTL deletes have NO free usage on the
+    // Spark plan — enabling them requires a billing account, which this plan
+    // forbids (https://firebase.google.com/docs/firestore/pricing). Expired
+    // docs REMAIN STORED until the owner deletes them manually in the console.
+    // Clients must reject expired docs; bounded accumulation is accepted for
+    // the home test.
 
     function store() {
         var s = (typeof globalThis !== 'undefined' && globalThis.QuickbeamStore) ||
@@ -119,7 +129,7 @@
                     return { error: 'Link has expired', status: 410 };
                 }
                 // No public-IP device auto-detection on static hosting; the
-                // recipient pairs by code or saved TV instead.
+                // recipient pairs by pairing link or saved TV instead.
                 doc.devices = [];
                 doc.status = 'not_paired';
                 return doc;
@@ -127,7 +137,17 @@
         });
     }
 
-    // --- Device registration & pairing codes ---
+    // --- Device registration & pairing links ---
+    //
+    // Pairing is a LINK, not a typed code. The home browser registers its TV
+    // under an unguessable 128-bit id and shows the sender a pairing link;
+    // the sender's phone opens the link, which resolves the device doc by id
+    // and saves it locally. There is no six-character cloud pairing code —
+    // short codes are not capability tokens.
+
+    function pairingLinkFor(deviceId) {
+        return pageOrigin() + '/magic.html?pair=' + encodeURIComponent(deviceId);
+    }
 
     function registerDevice(input) {
         var localIp = (input && input.localIp) || '';
@@ -138,60 +158,58 @@
             return Promise.reject(err('invalid-ip', 'That address is not a home-network (LAN) address.'));
         }
         var s = store();
-        var pairingCode = s.newPairingCode();
 
         return apiFetch('/api/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ localIp: localIp, deviceId: deviceId, deviceName: deviceName, pairingCode: pairingCode })
+            body: JSON.stringify({ localIp: localIp, deviceId: deviceId, deviceName: deviceName })
         }).then(function (r) {
-            if (r.api) return { pairingCode: pairingCode };
+            if (r.api) return { deviceId: (r.data && r.data.deviceId) || deviceId };
+            // Static hosting: the token IS the unguessable registration id.
             var now = new Date();
-            return s.createDoc('devices', deviceId, {
+            var token = s.newDeviceId();
+            return s.createDoc('devices', token, {
                 localIp: localIp,
                 deviceName: String(deviceName).slice(0, 80),
-                createdAt: now
+                createdAt: now,
+                expiresAt: new Date(now.getTime() + DEVICE_TTL_MS)
             }).then(function () {
-                return s.createDoc('pairing_codes', pairingCode, {
-                    deviceId: deviceId,
-                    createdAt: now,
-                    expiresAt: new Date(now.getTime() + PAIRING_CODE_TTL_MS)
-                });
-            }).then(function () { return { pairingCode: pairingCode }; });
+                return { deviceId: token, pairingLink: pairingLinkFor(token) };
+            });
         });
     }
 
-    function resolvePairingCode(code) {
-        var normalized = String(code || '').trim().toUpperCase();
-        return apiFetch('/api/resolve-code/' + encodeURIComponent(normalized)).then(function (r) {
+    // Resolve a pairing link token: get-by-unguessable-id, client-side expiry
+    // check (expired docs remain stored — Spark has no free TTL deletes).
+    function resolvePairingToken(token) {
+        var id = String(token || '').trim();
+        return apiFetch('/api/resolve-code/' + encodeURIComponent(id)).then(function (r) {
             if (r.api) {
                 if (r.data && r.data.status === 'paired' && r.data.device) {
-                    return { localIp: r.data.device.localIp, deviceName: r.data.device.deviceName };
+                    return { deviceId: null, localIp: r.data.device.localIp, deviceName: r.data.device.deviceName };
                 }
-                return { error: 'Pairing code not found or expired' };
+                return { error: 'Pairing link not found or expired' };
             }
             var s = store();
-            return s.getDoc('pairing_codes', normalized).then(function (claim) {
-                if (!claim) return { error: 'Pairing code not found or expired' };
-                if (claim.expiresAt && new Date(claim.expiresAt).getTime() < Date.now()) {
-                    return { error: 'Pairing code not found or expired' };
+            return s.getDoc('devices', id).then(function (dev) {
+                if (!dev) return { error: 'Pairing link not found or expired' };
+                if (dev.expiresAt && new Date(dev.expiresAt).getTime() < Date.now()) {
+                    return { error: 'Pairing link not found or expired' };
                 }
-                return s.getDoc('devices', claim.deviceId).then(function (dev) {
-                    if (!dev) return { error: 'Pairing code not found or expired' };
-                    return { localIp: dev.localIp, deviceName: dev.deviceName };
-                });
+                return { deviceId: id, localIp: dev.localIp, deviceName: dev.deviceName };
             });
         });
     }
 
     var api = {
         MAGIC_LINK_TTL_MS: MAGIC_LINK_TTL_MS,
-        PAIRING_CODE_TTL_MS: PAIRING_CODE_TTL_MS,
+        DEVICE_TTL_MS: DEVICE_TTL_MS,
         magicUrlFor: magicUrlFor,
+        pairingLinkFor: pairingLinkFor,
         createMagicLink: createMagicLink,
         getMagicLink: getMagicLink,
         registerDevice: registerDevice,
-        resolvePairingCode: resolvePairingCode
+        resolvePairingToken: resolvePairingToken
     };
 
     if (typeof module !== 'undefined' && module.exports) {

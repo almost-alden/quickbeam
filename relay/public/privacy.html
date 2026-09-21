@@ -222,7 +222,7 @@
 
             <p>Welcome to <span class="highlight">Couchbeam</span>. Couchbeam is a remote control and casting utility designed to make casting content to Roku devices simple and seamless. This Privacy Policy describes how JLC ("we", "our", or "us") processes your information when you use the Couchbeam web application (the "Web App") and the Couchbeam Roku Channel application (the "Roku App").</p>
             
-            <p>We respect your privacy and design our applications to function with minimal data footprint. Couchbeam does not use a persistent database; instead, the system operates in-memory with automatic data expiration.</p>
+            <p>We respect your privacy and design our applications to function with minimal data footprint. The local-relay configuration operates in-memory with automatic data expiration; the Firebase home-test configuration stores the same minimal records in Cloud Firestore, where expired records remain until deleted manually (see Retention Policy below).</p>
 
             <h2>1. Information We Do Not Collect</h2>
             <p>We do not collect or request any personally identifiable information (PII) such as:</p>
@@ -233,23 +233,23 @@
                 <li>Financial details or billing information</li>
             </ul>
 
-            <h2>2. Information We Process Ephemerally</h2>
-            <p>To enable communication between the Web App and your Roku device, the Couchbeam Relay Server processes the following metadata in the server's local RAM:</p>
+            <h2>2. Information We Process</h2>
+            <p>To enable communication between the Web App and your Roku device, the following device/network data is processed. There are two configurations:</p>
             <ul>
-                <li><span class="highlight">IP Addresses</span>: We temporarily process public and local IP addresses to match devices located on the same Wi-Fi subnet. This allows sender devices to automatically find Roku devices on their local network.</li>
-                <li><span class="highlight">Roku Device Metadata</span>: We process Roku device identifiers (Serial/ID) and names (e.g., "Living Room Roku") to let you distinguish between multiple devices.</li>
-                <li><span class="highlight">Pairing Codes</span>: If you generate a pairing code to pair devices across networks, this 6-character code is temporarily stored on the server to match your devices.</li>
+                <li><span class="highlight">Home test (Firebase)</span>: your TV's local-network IP address and TV label (e.g. "Living Room Roku") are stored in a Cloud Firestore document under an unguessable random id. Phones pair to a TV by opening a pairing <em>link</em> that contains that id — there are no typed pairing codes in this configuration.</li>
+                <li><span class="highlight">Local relay (Node server on your network)</span>: IP addresses, device identifiers, and 6-character pairing codes are processed in the relay server's local RAM.</li>
             </ul>
-            <p><strong>Retention Policy:</strong> All device registry entries and pairing information are held ephemerally in server RAM and automatically expire and delete within <span class="highlight">1 hour</span> of inactivity.</p>
+            <p><strong>Retention Policy:</strong> the home-test database does <em>not</em> delete expired documents automatically — automatic deletion has no free usage on the no-cost plan, and we do not enable billing. Expired documents remain stored until the owner deletes them manually in the Firebase console; bounded accumulation is accepted for the home test. The local relay holds entries ephemerally in RAM and drops them within 1 hour of inactivity.</p>
+            <p><strong>Test-only warning:</strong> the home test is for family testing only — this data handling is not a public-launch privacy posture.</p>
 
             <h2>3. Magic Links and Share Targets</h2>
             <p>When you create a "Magic Link" to send a video or channel link to a Roku device:</p>
             <ul>
                 <li>We parse the URL you provide to extract target application IDs and media parameters (e.g., YouTube or Netflix video identifiers).</li>
-                <li>This link mapping is stored on the relay server under a randomized, unique identifier (UUID).</li>
-                <li>You may optionally provide a sender name to display on the recipient's screen.</li>
+                <li>This link mapping is stored under a randomized, unguessable identifier (128-bit). In the home test it lives in Cloud Firestore; with the local relay it lives in server RAM.</li>
+                <li>The stored fields are: the Roku app id, the content id, the media type, the service name, an optional video title, the original https URL, and created/expiry timestamps. The home test stores no name, contact, or account fields.</li>
             </ul>
-            <p><strong>Retention Policy:</strong> All magic links expire and are permanently deleted from server RAM within <span class="highlight">24 hours</span>.</p>
+            <p><strong>Retention Policy:</strong> magic links stop working 24 hours after creation (clients reject expired links). In the home test, expired link documents <em>remain stored</em> until the owner deletes them manually — automatic deletion is not available on the no-cost plan. The local relay drops them from RAM within 24 hours.</p>
 
             <h2>4. Local Storage (Device-Only)</h2>
             <p>Couchbeam uses your web browser's local storage (<code class="highlight">localStorage</code>) to save preferences, pairing codes, and contact lists. This information is stored exclusively on your device, is never transmitted to our database, and remains under your complete control. You can clear this data at any time by clearing your browser cache.</p>

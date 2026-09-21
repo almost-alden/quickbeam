@@ -75,12 +75,15 @@ describe('id generators', () => {
         });
     });
 
-    test('newPairingCode is 6 unambiguous chars matching the rules regex', () => {
-        const codes = new Set(Array.from({ length: 50 }, () => store.newPairingCode()));
-        expect(codes.size).toBe(50);
-        codes.forEach((code) => {
-            expect(code).toMatch(/^[A-Z0-9]{6}$/);
-            expect(code).not.toMatch(/[01IL]/); // no ambiguous glyphs
+    test('newDeviceId is a 128-bit unguessable id like newMagicLinkId', () => {
+        const ids = new Set(Array.from({ length: 50 }, () => store.newDeviceId()));
+        expect(ids.size).toBe(50); // unique
+        ids.forEach((id) => {
+            expect(id).toMatch(/^[A-Za-z0-9_-]{22}$/); // 16 bytes -> 22 chars
         });
+    });
+
+    test('there is no short pairing-code generator', () => {
+        expect(store.newPairingCode).toBeUndefined();
     });
 });

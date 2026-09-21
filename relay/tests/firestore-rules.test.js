@@ -12,15 +12,15 @@ describe('firestore.rules', () => {
         expect(rules).toMatch(/match \/\{document=\*\*\} \{\s*allow read, write: if false;\s*\}/);
     });
 
-    test('covers exactly the three home-test collections', () => {
+    test('covers exactly the two home-test collections (no pairing_codes)', () => {
         expect(rules).toMatch(/match \/magic_links\/\{linkId\}/);
         expect(rules).toMatch(/match \/devices\/\{deviceId\}/);
-        expect(rules).toMatch(/match \/pairing_codes\/\{code\}/);
+        expect(rules).not.toMatch(/pairing_codes/);
     });
 
     test('forbids list/query everywhere (no enumeration of capability URLs)', () => {
         const lists = rules.match(/allow list: if false;/g) || [];
-        expect(lists.length).toBe(3);
+        expect(lists.length).toBe(2);
     });
 
     test('grants no unconditional access', () => {
@@ -29,17 +29,17 @@ describe('firestore.rules', () => {
 
     test('forbids client updates and deletes', () => {
         const denials = rules.match(/allow update, delete: if false;/g) || [];
-        expect(denials.length).toBe(3);
+        expect(denials.length).toBe(2);
     });
 
-    test('reads are gated on unguessable id shapes', () => {
-        expect(rules).toMatch(/allow get: if linkId\.matches\('\^(\[A-Za-z0-9_-\]|\\-)+\{20,32\}\$'\)/);
-        expect(rules).toMatch(/allow get: if code\.matches\('\^\[A-Z0-9\]\{6\}\$'\)/);
+    test('reads are gated on unguessable 128-bit id shapes', () => {
+        const gets = rules.match(/allow get: if (?:linkId|deviceId)\.matches\('\^(\[A-Za-z0-9_-\]|\\-)+\{20,32\}\$'\)/g) || [];
+        expect(gets.length).toBe(2);
     });
 
     test('creates are field-allowlisted with keys().hasOnly', () => {
         const allowlists = rules.match(/keys\(\)\.hasOnly\(/g) || [];
-        expect(allowlists.length).toBe(3);
+        expect(allowlists.length).toBe(2);
     });
 
     test('magic-link TTL is bounded (~24h) and mediaType is allowlisted', () => {
@@ -47,8 +47,14 @@ describe('firestore.rules', () => {
         expect(rules).toMatch(/'movie', 'series', 'episode', 'live', 'shortFormVideo'/);
     });
 
-    test('pairing-code TTL is bounded (~1h)', () => {
-        expect(rules).toMatch(/duration\.value\(65, 'm'\)/);
+    test('device registration TTL is bounded (~30d)', () => {
+        expect(rules).toMatch(/duration\.value\(30, 'd'\)/);
+    });
+
+    test('no TTL-policy or auto-delete claims in the rules comments', () => {
+        expect(rules).not.toMatch(/TTL polic/i);
+        expect(rules).not.toMatch(/actually deleted|auto-?delet/i);
+        expect(rules).toMatch(/REMAIN STORED/);
     });
 
     test('device localIp is restricted to RFC 1918', () => {
