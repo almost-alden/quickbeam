@@ -1,0 +1,96 @@
+// Firestore security rules — the security boundary for the Quickbeam home test.
+//
+// Model: there is NO backend. Browsers talk to Firestore directly over REST.
+// These rules are what keeps that safe:
+//
+//   * Default deny: nothing is readable or writable unless a rule below allows it.
+//   * Capability-URL reads: a document is readable ONLY by its unguessable id
+//     (128-bit random for magic links). list/query are forbidden everywhere,
+//     so ids can never be enumerated.
+//   * Validated creates: every field is type- and shape-checked; unknown
+//     fields are rejected (keys().hasOnly).
+//   * No client updates or deletes. Expiry is enforced by the expiresAt
+//     timestamp, which clients must honor (see relay/public/js/qb.js), plus a
+//     Firestore TTL policy on expiresAt (set in the console; documented in
+//     docs/firebase-spark-launch.md).
+//   * No PII by construction: the magic-link model has no sender name,
+//     contact, or identifier fields at all — there is nothing to leak.
+//   * The devices collection only accepts RFC 1918 LAN addresses, so the store
+//     can never be abused to aim a victim's browser at an arbitrary host.
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Magic links: sender-created watch links, 24h TTL. ---
+    match /magic_links/{linkId} {
+      allow get: if linkId.matches('^[A-Za-z0-9_-]{20,32}$');
+      allow list: if false;
+      allow create: if linkId.matches('^[A-Za-z0-9_-]{20,32}$')
+        && request.resource.data.keys().hasOnly(
+             ['appId', 'contentId', 'mediaType', 'serviceName',
+              'videoTitle', 'originalUrl', 'createdAt', 'expiresAt'])
+        && request.resource.data.appId is string
+        && request.resource.data.appId.size() >= 1
+        && request.resource.data.appId.size() <= 16
+        && request.resource.data.contentId is string
+        && request.resource.data.contentId.size() >= 1
+        && request.resource.data.contentId.size() <= 256
+        && request.resource.data.mediaType is string
+        && request.resource.data.mediaType in
+             ['movie', 'series', 'episode', 'live', 'shortFormVideo']
+        && request.resource.data.serviceName is string
+        && request.resource.data.serviceName.size() >= 1
+        && request.resource.data.serviceName.size() <= 80
+        && request.resource.data.videoTitle is string
+        && request.resource.data.videoTitle.size() <= 200
+        && request.resource.data.originalUrl is string
+        && request.resource.data.originalUrl.matches('^https://[^\\s]{1,2048}$')
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.expiresAt is timestamp
+        && request.resource.data.expiresAt > request.resource.data.createdAt
+        && request.resource.data.expiresAt
+             <= request.resource.data.createdAt + duration.value(25, 'h');
+      allow update, delete: if false;
+    }
+
+    // --- Devices: home TV registrations written by the home browser. ---
+    match /devices/{deviceId} {
+      allow get: if deviceId.matches('^[A-Za-z0-9_-]{1,64}$');
+      allow list: if false;
+      allow create: if deviceId.matches('^[A-Za-z0-9_-]{1,64}$')
+        && request.resource.data.keys().hasOnly(['localIp', 'deviceName', 'createdAt'])
+        && request.resource.data.localIp is string
+        && (request.resource.data.localIp.matches('^10\\.([0-9]{1,3}\\.){2}[0-9]{1,3}$')
+          || request.resource.data.localIp.matches('^192\\.168\\.([0-9]{1,3}\\.)[0-9]{1,3}$')
+          || request.resource.data.localIp.matches('^172\\.(1[6-9]|2[0-9]|3[01])\\.([0-9]{1,3}\\.)[0-9]{1,3}$'))
+        && request.resource.data.deviceName is string
+        && request.resource.data.deviceName.size() >= 1
+        && request.resource.data.deviceName.size() <= 80
+        && request.resource.data.createdAt is timestamp;
+      allow update, delete: if false;
+    }
+
+    // --- Pairing codes: short-lived (1h) claims mapping a 6-char code to a device. ---
+    match /pairing_codes/{code} {
+      allow get: if code.matches('^[A-Z0-9]{6}$');
+      allow list: if false;
+      allow create: if code.matches('^[A-Z0-9]{6}$')
+        && request.resource.data.keys().hasOnly(['deviceId', 'createdAt', 'expiresAt'])
+        && request.resource.data.deviceId is string
+        && request.resource.data.deviceId.matches('^[A-Za-z0-9_-]{1,64}$')
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.expiresAt is timestamp
+        && request.resource.data.expiresAt > request.resource.data.createdAt
+        && request.resource.data.expiresAt
+             <= request.resource.data.createdAt + duration.value(65, 'm');
+      allow update, delete: if false;
+    }
+  }
+}

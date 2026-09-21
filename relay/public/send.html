@@ -1,0 +1,1382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quickbeam | Sender Dashboard</title>
+    <!-- PWA & Mobile Optimization -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#8b5cf6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="/images/icon-512.jpg">
+    
+    <!-- Modern typography -->
+    <!-- System font stacks only — no webfont imports, per project rule. -->
+    
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: rgba(20, 26, 45, 0.6);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --primary: #8b5cf6;
+            --primary-hover: #7c3aed;
+            --primary-glow: rgba(139, 92, 246, 0.3);
+            
+            --success: #10b981;
+            --success-bg: rgba(16, 185, 129, 0.1);
+            --success-border: rgba(16, 185, 129, 0.2);
+            --success-text: #34d399;
+            
+            --warning: #f59e0b;
+            --warning-bg: rgba(245, 158, 11, 0.1);
+            --warning-border: rgba(245, 158, 11, 0.2);
+            --warning-text: #fbbf24;
+            
+            --error: #ef4444;
+            --error-bg: rgba(239, 68, 68, 0.1);
+            --error-border: rgba(239, 68, 68, 0.2);
+            --error-text: #f87171;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.15) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: var(--text-primary);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 1.5rem;
+            box-sizing: border-box;
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--card-border);
+            padding: 2.5rem;
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 440px;
+            box-sizing: border-box;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Subtle glowing card accent */
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #6366f1, #8b5cf6, #ec4899);
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0 0 0.5rem;
+            letter-spacing: -0.025em;
+            background: linear-gradient(to right, #a5b4fc, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin: 0 0 2rem;
+            font-weight: 300;
+        }
+
+        .status-badge {
+            margin-bottom: 2rem;
+            padding: 1rem;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+            text-align: left;
+            line-height: 1.4;
+            word-break: break-word;
+        }
+
+        .status-badge.loading {
+            background: rgba(255, 255, 255, 0.03);
+            border-color: rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+        }
+
+        .status-badge.connected {
+            background: var(--success-bg);
+            border-color: var(--success-border);
+            color: var(--success-text);
+        }
+
+        .status-badge.disconnected {
+            background: var(--warning-bg);
+            border-color: var(--warning-border);
+            color: var(--warning-text);
+        }
+
+        .status-badge.error {
+            background: var(--error-bg);
+            border-color: var(--error-border);
+            color: var(--error-text);
+        }
+
+        /* Ping pulse animation for connection status */
+        .ping-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            position: relative;
+            flex-shrink: 0;
+            margin-top: 0.35rem;
+        }
+        
+        .connected .ping-indicator { background-color: var(--success); }
+        .disconnected .ping-indicator { background-color: var(--warning); }
+        .loading .ping-indicator { background-color: var(--text-secondary); }
+
+        .connected .ping-indicator::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--success);
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.7; }
+            100% { transform: scale(2.5); opacity: 0; }
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.6rem;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+        }
+
+        .input-group {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+
+        input {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            font-family: inherit;
+            box-sizing: border-box;
+            transition: all 0.2s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.25);
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 1.1rem;
+            background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 12px var(--primary-glow);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(139, 92, 246, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(1px);
+        }
+
+        #result {
+            margin-top: 2rem;
+            display: none;
+            padding: 1.25rem;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .link-container {
+            display: flex;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 0.5rem 0.5rem 0.5rem 1rem;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .link-text {
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            word-break: break-all;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            flex-grow: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .copy-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: var(--text-primary);
+            border-radius: 8px;
+            padding: 0.6rem 1rem;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            flex-shrink: 0;
+        }
+
+        .copy-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .copy-btn:active {
+            transform: scale(0.95);
+        }
+
+        .copy-btn.copied {
+            background: var(--success-bg);
+            border-color: var(--success-border);
+            color: var(--success-text);
+        }
+
+        .copy-btn svg {
+            transition: transform 0.2s ease;
+        }
+
+        .copy-btn.copied svg {
+            transform: scale(1.1);
+        }
+
+        .copy-hint {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        /* Contacts directory styling */
+        .contacts-section {
+            margin-top: 1.5rem;
+            margin-bottom: 1.5rem;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 1.25rem;
+        }
+
+        .contacts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .contact-btn {
+            background: rgba(139, 92, 246, 0.06);
+            border: 1px solid rgba(139, 92, 246, 0.15);
+            color: var(--text-primary);
+            border-radius: 12px;
+            padding: 0.75rem 0.5rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+            position: relative;
+            box-sizing: border-box;
+        }
+
+        .contact-btn:hover {
+            background: rgba(139, 92, 246, 0.15);
+            border-color: rgba(139, 92, 246, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .contact-btn:active {
+            transform: translateY(1px);
+        }
+
+        .contact-btn .delete-contact {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 2px;
+            border-radius: 50%;
+            display: inline-flex;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .contact-btn:hover .delete-contact {
+            opacity: 1;
+        }
+
+        .contact-btn .delete-contact:hover {
+            color: var(--error-text);
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .contact-initials {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(139, 92, 246, 0.2);
+            color: #c084fc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        /* Modal Backdrop */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(11, 15, 25, 0.85);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Modal Card */
+        .modal-content {
+            background: rgba(20, 26, 45, 0.95);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 2.5rem;
+            width: 90%;
+            max-width: 480px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            position: relative;
+            transform: scale(0.95);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-content::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #6366f1, #8b5cf6, #ec4899);
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-top: 0;
+            margin-bottom: 1rem;
+            color: #f3f4f6;
+            background: linear-gradient(to right, #a5b4fc, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .modal-desc {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            font-weight: 300;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Step List */
+        .step-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .step-number {
+            background: rgba(139, 92, 246, 0.15);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            color: #c084fc;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .step-text {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            font-weight: 300;
+            margin: 0;
+            text-align: left;
+        }
+
+        .step-text b {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .modal-btn {
+            width: 100%;
+            background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+            color: white;
+            border: none;
+            padding: 0.9rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            box-shadow: 0 4px 12px var(--primary-glow);
+            transition: all 0.2s ease;
+            margin-top: 1.5rem;
+        }
+
+        .modal-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(139, 92, 246, 0.4);
+        }
+
+        /* Small Help Trigger button in header */
+        .help-trigger {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .help-trigger:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* Device Manager styling inside index.html */
+        .device-manager {
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 18px;
+            padding: 1.25rem;
+            margin-top: 1.25rem;
+            text-align: left;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        .device-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            max-height: 150px;
+            overflow-y: auto;
+            margin-top: 0.75rem;
+            padding-right: 0.25rem;
+        }
+
+        .device-item {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 0.6rem 0.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .device-item:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .device-item.active {
+            background: rgba(139, 92, 246, 0.08);
+            border-color: rgba(139, 92, 246, 0.3);
+        }
+
+        .device-item-name {
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+
+        .device-item-ip {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-family: monospace;
+        }
+
+        .device-badge {
+            font-size: 0.65rem;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .device-badge.auto {
+            background: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+        }
+
+        .device-badge.manual {
+            background: rgba(139, 92, 246, 0.15);
+            color: #c084fc;
+        }
+
+        .delete-device-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 4px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .delete-device-btn:hover {
+            color: var(--error-text);
+            background: rgba(239, 68, 68, 0.1);
+        }
+        
+        .switch-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            padding: 0.4rem 0.6rem;
+            font-size: 0.7rem;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .switch-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <h1 style="margin: 0;">Quickbeam ⚡️</h1>
+            <button class="help-trigger" onclick="openModal()" title="How it works">
+                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            </button>
+        </div>
+        <p>Send a video to a friend's Roku instantly.</p>
+        
+        <label for="senderName">Your Name</label>
+        <div class="input-group">
+            <input type="text" id="senderName" placeholder="e.g. Johnny">
+        </div>
+
+        <label for="videoUrl">Video URL</label>
+        <div class="input-group">
+            <input type="text" id="videoUrl" placeholder="Paste YouTube, Netflix, or Prime link">
+        </div>
+        <div style="text-align: right; margin-top: -0.35rem; margin-bottom: 0.75rem;">
+            <a href="#" onclick="toggleServiceRequest(event)" style="font-size: 0.75rem; color: var(--text-secondary); text-decoration: none;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-secondary)'">Missing a service? Request it →</a>
+        </div>
+        <div id="service-request-panel" style="display: none; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 0.9rem; margin-bottom: 0.9rem;">
+            <label style="font-size: 0.8rem; font-weight: 600;">Request a service</label>
+            <p style="font-size: 0.75rem; color: var(--text-secondary); margin: 0.25rem 0 0.6rem;">Tell us which streaming service to add next. We'll prioritize the most-requested.</p>
+            <div class="input-group" style="margin-bottom: 0.5rem;">
+                <input type="text" id="reqServiceName" placeholder="Service name" maxlength="80">
+            </div>
+            <div class="input-group" style="margin-bottom: 0.6rem;">
+                <input type="text" id="reqContact" placeholder="Email or phone (optional, for updates)" maxlength="120">
+            </div>
+            <button class="btn-primary" onclick="submitServiceRequest()" style="padding: 0.6rem; font-size: 0.85rem; height: auto;">
+                <span>Send request</span>
+            </button>
+            <div id="reqResult" style="font-size: 0.8rem; margin-top: 0.5rem; display: none;"></div>
+            <p style="font-size: 0.7rem; color: var(--text-secondary); margin: 0.6rem 0 0;">Contact info is only used to notify you if this service gets added. See our <a href="/privacy.html" style="color: var(--text-secondary);">Privacy Policy</a>.</p>
+        </div>
+
+        <label for="videoTitle">Video Title (Optional)</label>
+        <div class="input-group">
+            <input type="text" id="videoTitle" placeholder="e.g. West Wing, Season 1 Episode 4">
+        </div>
+
+        <button class="btn-primary" onclick="generateLink()">
+            <span>Create Magic Link</span>
+            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+        </button>
+
+        <!-- Contacts Directory Section -->
+        <div class="contacts-section">
+            <label>Quick Send to Contact</label>
+            <div id="contacts-container" class="contacts-grid">
+                <!-- Rendered dynamically -->
+            </div>
+            
+            <div class="add-contact-form" style="border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 1rem; margin-top: 0.5rem; text-align: left;">
+                <label style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.5rem; display: block; font-weight: 500;">Add New Contact</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem;">
+                    <input type="text" id="newContactName" placeholder="Name (e.g. Mom)" style="padding: 0.6rem 0.8rem; font-size: 0.85rem; width: 100%; box-sizing: border-box;">
+                    <input type="text" id="newContactCode" placeholder="TV Code (6 digits)" style="padding: 0.6rem 0.8rem; font-size: 0.85rem; width: 100%; box-sizing: border-box;">
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem;">
+                    <input type="text" id="newContactPhone" placeholder="Phone (SMS/WhatsApp)" style="padding: 0.6rem 0.8rem; font-size: 0.85rem; width: 100%; box-sizing: border-box;">
+                    <input type="text" id="newContactEmail" placeholder="Email Address" style="padding: 0.6rem 0.8rem; font-size: 0.85rem; width: 100%; box-sizing: border-box;">
+                </div>
+                <button class="btn-primary" onclick="saveContact()" style="padding: 0.65rem; font-size: 0.85rem; height: auto; margin-top: 0.25rem;">
+                    <span>+ Add Contact</span>
+                </button>
+            </div>
+        </div>
+
+        <div id="result">
+            <label>Magic Link Ready!</label>
+            <div class="link-container">
+                <span class="link-text" id="outputLink"></span>
+                <button class="copy-btn" id="copyBtn" onclick="copyLink()">
+                    <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round" id="copyIcon"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    <span>Copy</span>
+                </button>
+            </div>
+            <div class="copy-hint">Copy this link and text it to your friend.</div>
+        </div>
+
+        <div id="roku-status" class="status-badge loading" style="margin-top: 1.5rem; margin-bottom: 0; padding: 0.75rem; font-size: 0.8rem; line-height: 1.3;">
+            <span class="ping-indicator"></span>
+            <span>Checking Roku status...</span>
+        </div>
+
+        <div style="text-align: center; margin-top: 0.75rem;">
+            <a href="#" id="toggle-sender-pairing" style="font-size: 0.75rem; color: var(--text-secondary); text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-secondary)'" onclick="toggleSenderPairing(event)">🔍 Find or Add Roku TV</a>
+        </div>
+
+        <!-- Sender Device Manager Panel -->
+        <div id="sender-pairing-panel" class="device-manager" style="display:none; margin-top: 1.25rem;">
+            <div class="setup-desc" style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.75rem;">
+                Pair a Roku TV to automatically link generated streams to it.
+            </div>
+            
+            <div style="border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 0.75rem; margin-bottom: 0.75rem;">
+                <label style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 0.35rem; font-weight: 600; text-transform: uppercase;">Pair with 6-Digit TV Code</label>
+                <div style="display: grid; grid-template-columns: 1fr auto; gap: 0.5rem;">
+                    <input type="text" id="senderPairCode" placeholder="Enter code (e.g. 123456)" style="padding: 0.5rem 0.75rem; font-size: 0.85rem; width: 100%; box-sizing: border-box;">
+                    <button class="btn-primary" onclick="pairWithCode()" style="padding: 0.5rem 1rem; width: auto; font-size: 0.85rem; border-radius: 8px;">Pair</button>
+                </div>
+            </div>
+            
+            <div>
+                <label style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 0.35rem; font-weight: 600; text-transform: uppercase;">Add Manual TV IP</label>
+                <div style="display: grid; grid-template-columns: 1fr auto; gap: 0.5rem; margin-bottom: 0.5rem;">
+                    <input type="text" id="senderDeviceIp" placeholder="e.g. 192.168.1.50" style="padding: 0.5rem 0.75rem; font-size: 0.85rem; width: 100%; box-sizing: border-box;">
+                    <button class="btn-primary" onclick="addSenderManualDevice()" style="padding: 0.5rem 1rem; width: auto; font-size: 0.85rem; border-radius: 8px;">Add</button>
+                </div>
+            </div>
+            
+            <div class="device-list" id="senderDeviceListContainer" style="margin-top: 0.75rem;">
+                <!-- Paired device list filled dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Helper / Tutorial Modal -->
+    <div id="tutorial-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 class="modal-title">Welcome to Quickbeam! ⚡️</h2>
+            <p class="modal-desc">Quickbeam is a simple, lightweight utility that lets you instantly send and play videos on a friend's Roku TV—completely free, with no accounts or sign-ins needed.</p>
+            
+            <div class="step-item">
+                <div class="step-number">1</div>
+                <p class="step-text"><b>Get the Roku App</b>: Install and open the Quickbeam channel on the Roku TV. It will display a 6-digit pairing code on the screen.</p>
+            </div>
+            <div class="step-item">
+                <div class="step-number">2</div>
+                <p class="step-text"><b>Add Contact & Pair</b>: Under "Quick Send", add your contact's name and their 6-digit TV pairing code. You can also save their phone or email for direct delivery.</p>
+            </div>
+            <div class="step-item">
+                <div class="step-number">3</div>
+                <p class="step-text"><b>Cast Instantly</b>: Paste a video URL, tap their contact card, and send it! Opening the link instantly launches the video on their TV.</p>
+            </div>
+
+            <button class="modal-btn" onclick="closeModal()">Got it, let's cast!</button>
+        </div>
+    </div>
+
+    <div class="footer-links" style="margin-top: 1.5rem; text-align: center; font-size: 0.8rem; color: var(--text-secondary); display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+        <a href="/about" style="color: var(--text-secondary); text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-secondary)'">About &amp; Manual</a>
+        <a href="/support" style="color: var(--text-secondary); text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-secondary)'">Support</a>
+        <a href="/privacy.html" style="color: var(--text-secondary); text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-secondary)'">Privacy Policy</a>
+        <a href="/terms.html" style="color: var(--text-secondary); text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-secondary)'">Terms of Use</a>
+    </div>
+
+    <script>
+        // Load saved sender name on startup
+        document.getElementById('senderName').value = localStorage.getItem('quickbeam_sender_name') || '';
+
+        // PWA Setup and Share Target Interception
+        window.addEventListener('DOMContentLoaded', () => {
+            // Parse Web Share Target API query params (e.g. from YouTube Share)
+            const parsedUrl = new URL(window.location.href);
+            const sharedUrl = parsedUrl.searchParams.get('url');
+            const sharedText = parsedUrl.searchParams.get('text');
+            const sharedTitle = parsedUrl.searchParams.get('title');
+            
+            let targetUrl = '';
+            let targetTitle = '';
+            
+            if (sharedUrl) {
+                targetUrl = sharedUrl;
+            }
+            
+            if (sharedText) {
+                // Extracts HTTP URLs embedded in share text (common in YouTube mobile share)
+                const urlMatch = sharedText.match(/https?:\/\/[^\s]+/);
+                if (urlMatch) {
+                    if (!targetUrl) targetUrl = urlMatch[0];
+                    // The text excluding the URL is the title
+                    targetTitle = sharedText.replace(urlMatch[0], '').replace(/["']/g, '').trim();
+                } else if (!targetUrl) {
+                    targetUrl = sharedText;
+                }
+            }
+            
+            if (sharedTitle && !targetTitle) {
+                targetTitle = sharedTitle;
+            }
+            
+            if (targetUrl) {
+                document.getElementById('videoUrl').value = targetUrl;
+            }
+            if (targetTitle) {
+                document.getElementById('videoTitle').value = targetTitle;
+            }
+            
+            // Register Service Worker
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(() => console.log('[PWA] Service Worker Registered'))
+                    .catch(err => console.error('[PWA] Service Worker Register Fail', err));
+            }
+            
+            // Render contacts list
+            renderContacts();
+
+            // Trigger tutorial modal for first-time users
+            if (!localStorage.getItem('quickbeam_tutorial_seen')) {
+                openModal();
+            }
+        });
+
+        function openModal() {
+            document.getElementById('tutorial-modal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('tutorial-modal').classList.remove('active');
+            localStorage.setItem('quickbeam_tutorial_seen', 'true');
+        }
+
+        async function checkStatus() {
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
+                const statusEl = document.getElementById('roku-status');
+                const textEl = statusEl.querySelector('span:not(.ping-indicator)');
+                
+                if (data.active) {
+                    statusEl.className = "status-badge connected";
+                    textEl.innerText = "A Roku TV is active on your network!";
+                } else {
+                    statusEl.className = "status-badge disconnected";
+                    textEl.innerText = "No Roku TV detected on your network. (Your detected public IP: " + data.publicIp + "). Recipient's phone must open the magic link on the same Wi-Fi to register their TV.";
+                }
+            } catch (e) {
+                const statusEl = document.getElementById('roku-status');
+                statusEl.className = "status-badge error";
+                statusEl.querySelector('span:not(.ping-indicator)').innerText = "Unable to check Roku status.";
+            }
+        }
+
+        async function generateLink() {
+            const senderName = document.getElementById('senderName').value.trim();
+            const url = document.getElementById('videoUrl').value.trim();
+            const videoTitle = document.getElementById('videoTitle').value.trim();
+            const defaultPairingCode = getSenderDefaultPairingCode();
+            
+            if (!url) return alert("Please paste a URL");
+
+            if (senderName) {
+                localStorage.setItem('quickbeam_sender_name', senderName);
+            } else {
+                localStorage.removeItem('quickbeam_sender_name');
+            }
+
+            try {
+                const res = await fetch('/api/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url, senderName, videoTitle, pairingCode: defaultPairingCode })
+                });
+                
+                const data = await res.json();
+                if (data.relayUrl) {
+                    document.getElementById('result').style.display = 'block';
+                    document.getElementById('outputLink').innerText = data.relayUrl;
+                } else if (data.error === 'URL not supported yet') {
+                    document.getElementById('service-request-panel').style.display = 'block';
+                    document.getElementById('reqServiceName').placeholder = 'Service name (e.g. the site your link was from)';
+                    alert('That link isn\'t from a supported service yet. Request it below and we\'ll prioritize it.');
+                    document.getElementById('service-request-panel').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                } else {
+                    alert("Error: " + (data.error || "Unknown error"));
+                }
+            } catch (e) {
+                alert("Failed to connect to Relay server.");
+            }
+        }
+
+        // Service request: "don't see your service? request it"
+        function toggleServiceRequest(event) {
+            event.preventDefault();
+            const panel = document.getElementById('service-request-panel');
+            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        }
+
+        async function submitServiceRequest() {
+            const service = document.getElementById('reqServiceName').value.trim();
+            const contact = document.getElementById('reqContact').value.trim();
+            const result = document.getElementById('reqResult');
+            result.style.display = 'block';
+            if (service.length < 2) {
+                result.style.color = '#ff8a8a';
+                result.innerText = 'Please name the service you want added.';
+                return;
+            }
+            try {
+                const res = await fetch('/api/service-request', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ service, contact })
+                });
+                const data = await res.json();
+                if (data.status === 'ok') {
+                    result.style.color = '#7dffa8';
+                    result.innerText = `Thanks! "${service}" is on the request list.`;
+                    document.getElementById('reqServiceName').value = '';
+                    document.getElementById('reqContact').value = '';
+                } else {
+                    result.style.color = '#ff8a8a';
+                    result.innerText = 'Error: ' + (data.error || 'Unknown error');
+                }
+            } catch (e) {
+                result.style.color = '#ff8a8a';
+                result.innerText = 'Failed to connect to Relay server.';
+            }
+        }
+
+        // Contact Management Logic
+        function getContacts() {
+            try {
+                return JSON.parse(localStorage.getItem('quickbeam_contacts')) || [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function saveContactsList(contacts) {
+            localStorage.setItem('quickbeam_contacts', JSON.stringify(contacts));
+        }
+
+        function saveContact() {
+            const nameInput = document.getElementById('newContactName');
+            const codeInput = document.getElementById('newContactCode');
+            const phoneInput = document.getElementById('newContactPhone');
+            const emailInput = document.getElementById('newContactEmail');
+
+            const name = nameInput.value.trim();
+            const code = codeInput.value.trim().replace(/\s+/g, '');
+            const phone = phoneInput.value.trim().replace(/\s+/g, '');
+            const email = emailInput.value.trim();
+
+            if (!name) return alert("Please enter a contact name.");
+
+            const contacts = getContacts();
+            // Avoid duplicate name
+            if (contacts.some(c => c.name.toLowerCase() === name.toLowerCase())) {
+                return alert("A contact with this name already exists.");
+            }
+
+            contacts.push({ name, code, phone, email });
+            saveContactsList(contacts);
+
+            nameInput.value = '';
+            codeInput.value = '';
+            phoneInput.value = '';
+            emailInput.value = '';
+            renderContacts();
+        }
+
+        function deleteContact(index, event) {
+            if (event) event.stopPropagation();
+            if (!confirm("Are you sure you want to delete this contact?")) return;
+            const contacts = getContacts();
+            contacts.splice(index, 1);
+            saveContactsList(contacts);
+            renderContacts();
+        }
+
+        function renderContacts() {
+            const container = document.getElementById('contacts-container');
+            container.innerHTML = '';
+            const contacts = getContacts();
+
+            contacts.forEach((contact, index) => {
+                const btn = document.createElement('div');
+                btn.className = 'contact-btn';
+                btn.onclick = () => sendToContact(contact);
+
+                // Initials
+                const initials = document.createElement('div');
+                initials.className = 'contact-initials';
+                initials.innerText = contact.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                btn.appendChild(initials);
+
+                // Name text
+                const nameSpan = document.createElement('span');
+                nameSpan.innerText = contact.name;
+                nameSpan.style.whiteSpace = 'nowrap';
+                nameSpan.style.overflow = 'hidden';
+                nameSpan.style.textOverflow = 'ellipsis';
+                nameSpan.style.width = '100%';
+                btn.appendChild(nameSpan);
+
+                // Badges container
+                const badgesDiv = document.createElement('div');
+                badgesDiv.style.display = 'flex';
+                badgesDiv.style.gap = '0.35rem';
+                badgesDiv.style.marginTop = '0.2rem';
+                badgesDiv.style.fontSize = '0.7rem';
+                badgesDiv.style.color = 'var(--text-secondary)';
+
+                if (contact.code) {
+                    const b = document.createElement('span');
+                    b.innerText = '📺';
+                    b.title = 'Pairing Code: ' + contact.code;
+                    badgesDiv.appendChild(b);
+                }
+                if (contact.phone) {
+                    const b = document.createElement('span');
+                    b.innerText = '📞';
+                    b.title = 'Phone: ' + contact.phone;
+                    badgesDiv.appendChild(b);
+                }
+                if (contact.email) {
+                    const b = document.createElement('span');
+                    b.innerText = '✉️';
+                    b.title = 'Email: ' + contact.email;
+                    badgesDiv.appendChild(b);
+                }
+                btn.appendChild(badgesDiv);
+
+                // Delete button
+                const delBtn = document.createElement('button');
+                delBtn.className = 'delete-contact';
+                delBtn.innerHTML = '<svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+                delBtn.onclick = (e) => deleteContact(index, e);
+                btn.appendChild(delBtn);
+
+                container.appendChild(btn);
+            });
+        }
+
+        async function sendToContact(contact) {
+            const url = document.getElementById('videoUrl').value.trim();
+            const senderName = document.getElementById('senderName').value.trim();
+            const videoTitle = document.getElementById('videoTitle').value.trim();
+            
+            if (!url) return alert("Please paste a Video URL first.");
+            
+            if (senderName) {
+                localStorage.setItem('quickbeam_sender_name', senderName);
+            }
+
+            try {
+                const res = await fetch('/api/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url, senderName, pairingCode: contact.code, videoTitle })
+                });
+                
+                const data = await res.json();
+                if (data.relayUrl) {
+                    document.getElementById('result').style.display = 'block';
+                    document.getElementById('outputLink').innerText = data.relayUrl;
+                    
+                    // Copy link to clipboard in background
+                    try {
+                        await navigator.clipboard.writeText(data.relayUrl);
+                    } catch (err) {
+                        console.log('Clipboard write failed', err);
+                    }
+
+                    // Direct messaging routing based on details
+                    if (contact.phone) {
+                        const smsBody = `${senderName || 'Your friend'} sent you a video link! Open this to cast it onto your TV: ${data.relayUrl}`;
+                        const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+                        const smsUrl = `sms:${contact.phone}${isiOS ? '&' : '?'}body=${encodeURIComponent(smsBody)}`;
+                        window.location.href = smsUrl;
+                    } else if (contact.email) {
+                        const emailSubject = 'Quickbeam Cast ⚡️';
+                        const emailBody = `${senderName || 'Your friend'} sent you a video link! Open this to cast it onto your TV: ${data.relayUrl}`;
+                        const mailUrl = `mailto:${contact.email}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+                        window.location.href = mailUrl;
+                    } else if (navigator.share) {
+                        try {
+                            await navigator.share({
+                                title: 'Quickbeam Link ⚡️',
+                                text: `Hi ${contact.name}, ${senderName || 'Your friend'} sent you a video!`,
+                                url: data.relayUrl
+                            });
+                        } catch (err) {
+                            console.log('User dismissed share dialog', err);
+                        }
+                    } else {
+                        alert(`Magic Link generated and copied to clipboard!\nSend it to ${contact.name}:\n${data.relayUrl}`);
+                    }
+                } else {
+                    alert("Error: " + (data.error || "Unknown error"));
+                }
+            } catch (e) {
+                alert("Failed to connect to Relay server.");
+            }
+        }
+
+        async function copyLink() {
+            const linkText = document.getElementById('outputLink').innerText;
+            try {
+                await navigator.clipboard.writeText(linkText);
+                const copyBtn = document.getElementById('copyBtn');
+                const btnSpan = copyBtn.querySelector('span');
+                const btnIcon = copyBtn.querySelector('svg');
+                
+                btnSpan.innerText = 'Copied!';
+                copyBtn.classList.add('copied');
+                btnIcon.innerHTML = '<polyline points="20 6 9 17 4 12"></polyline>';
+                
+                setTimeout(() => {
+                    btnSpan.innerText = 'Copy';
+                    copyBtn.classList.remove('copied');
+                    btnIcon.innerHTML = '<rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>';
+                }, 2000);
+            } catch (e) {
+                alert("Failed to copy link: " + e);
+            }
+        }
+
+        // Default pairing code logic on sender dashboard
+        function getSenderManualDevices() {
+            try {
+                return JSON.parse(localStorage.getItem('quickbeam_sender_manual_devices')) || [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function saveSenderManualDevices(devices) {
+            localStorage.setItem('quickbeam_sender_manual_devices', JSON.stringify(devices));
+        }
+
+        function getSenderDefaultPairingCode() {
+            return localStorage.getItem('quickbeam_default_pairing_code') || '';
+        }
+
+        function saveSenderDefaultPairingCode(code) {
+            if (code) {
+                localStorage.setItem('quickbeam_default_pairing_code', code);
+            } else {
+                localStorage.removeItem('quickbeam_default_pairing_code');
+            }
+        }
+
+        function toggleSenderPairing(e) {
+            if (e) e.preventDefault();
+            const panel = document.getElementById('sender-pairing-panel');
+            const isHidden = panel.style.display === 'none';
+            panel.style.display = isHidden ? 'block' : 'none';
+            if (isHidden) {
+                renderSenderDevices();
+            }
+        }
+
+        async function pairWithCode() {
+            const codeInput = document.getElementById('senderPairCode');
+            const code = codeInput.value.trim().replace(/\s+/g, '');
+            if (!code || code.length < 5) return alert("Please enter a valid pairing code.");
+
+            try {
+                const res = await fetch(`/api/resolve-code/${code}`);
+                const data = await res.json();
+                if (data.status === 'paired' && data.device) {
+                    const dev = data.device;
+                    const devices = getSenderManualDevices();
+                    if (!devices.some(d => d.ip === dev.localIp)) {
+                        devices.push({ name: dev.deviceName, ip: dev.localIp, code: code });
+                        saveSenderManualDevices(devices);
+                    }
+                    saveSenderDefaultPairingCode(code);
+                    codeInput.value = '';
+                    renderSenderDevices();
+                    alert(`Successfully paired default TV: ${dev.deviceName}!`);
+                } else {
+                    alert("Failed to find TV: Code invalid or expired.");
+                }
+            } catch (e) {
+                alert("Error connecting to server to resolve code.");
+            }
+        }
+
+        function addSenderManualDevice() {
+            const ipInput = document.getElementById('senderDeviceIp');
+            const ip = ipInput.value.trim();
+            if (!ip) return alert("Please enter a valid IP address.");
+            
+            const ipPattern = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/;
+            if (!ipPattern.test(ip) && ip !== 'localhost') {
+                return alert("Please enter a valid IP format.");
+            }
+
+            const devices = getSenderManualDevices();
+            if (devices.some(d => d.ip === ip)) {
+                return alert("This TV IP is already added.");
+            }
+
+            devices.push({ name: `Roku TV (${ip.split('.').pop()})`, ip: ip, code: '' });
+            saveSenderManualDevices(devices);
+            ipInput.value = '';
+            renderSenderDevices();
+        }
+
+        function deleteSenderDevice(index, event) {
+            if (event) event.stopPropagation();
+            if (!confirm("Remove this TV pairing?")) return;
+            const devices = getSenderManualDevices();
+            const removed = devices.splice(index, 1)[0];
+            saveSenderManualDevices(devices);
+            
+            // If the deleted device was the default pairing code, clear it
+            const defaultCode = getSenderDefaultPairingCode();
+            if (removed.code && defaultCode === removed.code) {
+                saveSenderDefaultPairingCode('');
+            }
+            renderSenderDevices();
+        }
+
+        function setSenderActiveDevice(device) {
+            if (device.code) {
+                saveSenderDefaultPairingCode(device.code);
+            } else {
+                saveSenderDefaultPairingCode('');
+            }
+            // Temporarily store active IP
+            localStorage.setItem('quickbeam_sender_active_ip', device.ip);
+            renderSenderDevices();
+        }
+
+        function renderSenderDevices() {
+            const container = document.getElementById('senderDeviceListContainer');
+            container.innerHTML = '';
+            const devices = getSenderManualDevices();
+            const defaultCode = getSenderDefaultPairingCode();
+            const activeIp = localStorage.getItem('quickbeam_sender_active_ip');
+
+            devices.forEach((dev, index) => {
+                const isActive = (dev.code && defaultCode === dev.code) || (!dev.code && activeIp === dev.ip);
+                
+                const item = document.createElement('div');
+                item.className = `device-item ${isActive ? 'active' : ''}`;
+                item.onclick = () => setSenderActiveDevice(dev);
+
+                const info = document.createElement('div');
+                info.className = 'device-info';
+                
+                const nameText = document.createElement('div');
+                nameText.className = 'device-item-name';
+                nameText.innerText = dev.name + (isActive ? ' (Default)' : '');
+
+                const ipText = document.createElement('div');
+                ipText.className = 'device-item-ip';
+                ipText.innerText = dev.ip + (dev.code ? ` [Code: ${dev.code}]` : '');
+
+                info.appendChild(nameText);
+                info.appendChild(ipText);
+                item.appendChild(info);
+
+                const badgeRow = document.createElement('div');
+                badgeRow.style.display = 'flex';
+                badgeRow.style.alignItems = 'center';
+                badgeRow.style.gap = '0.5rem';
+
+                // Download/Install Button
+                const installBtn = document.createElement('button');
+                installBtn.className = 'switch-btn';
+                installBtn.innerText = '⚡️ Install App';
+                installBtn.title = 'Install Quickbeam app directly on this TV';
+                installBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    installChannelOnTv(dev.ip);
+                };
+                badgeRow.appendChild(installBtn);
+
+                // Delete Button
+                const delBtn = document.createElement('button');
+                delBtn.className = 'delete-device-btn';
+                delBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>';
+                delBtn.onclick = (e) => deleteSenderDevice(index, e);
+                badgeRow.appendChild(delBtn);
+
+                item.appendChild(badgeRow);
+                container.appendChild(item);
+            });
+        }
+
+        async function installChannelOnTv(ip) {
+            // ECP install endpoint: POST /install/<app-id>
+            // Sideloaded dev channel ID is 'dev'.
+            const url = `http://${ip}:8060/install/dev`;
+            
+            try {
+                // Perform local ECP request using form submission to bypass HTTPS mixed content block if sender page is HTTPS
+                let iframe = document.getElementById('hidden_install_iframe');
+                if (!iframe) {
+                    iframe = document.createElement('iframe');
+                    iframe.id = 'hidden_install_iframe';
+                    iframe.name = 'hidden_install_iframe';
+                    iframe.style.display = 'none';
+                    document.body.appendChild(iframe);
+                }
+
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = url;
+                form.target = 'hidden_install_iframe';
+                document.body.appendChild(form);
+                form.submit();
+                document.body.removeChild(form);
+                
+                alert(`Triggered channel installation command to TV at ${ip}. Make sure the TV is on and connected to the same Wi-Fi.`);
+            } catch (e) {
+                alert(`Failed to send command to TV at ${ip}.`);
+            }
+        }
+
+        checkStatus();
+        setInterval(checkStatus, 10000);
+    </script>
+</body>
+</html>
