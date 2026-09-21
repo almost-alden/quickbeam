@@ -1,4 +1,4 @@
-// Dependency-free Firestore REST client for the Quickbeam home test.
+// Dependency-free Firestore REST client for the Couchbeam home test.
 //
 // Why REST instead of the Firebase JS SDK: the standing project rule forbids
 // third-party scripts (no gstatic SDK bundles, no analytics). Firestore's
@@ -6,9 +6,9 @@
 // first-party. Security is enforced by firestore.rules, not by obscurity.
 //
 // Usage (browser): include firebase-config.js first, then this file.
-//   QuickbeamStore.isConfigured()
-//   await QuickbeamStore.createDoc('magic_links', id, { ... })
-//   await QuickbeamStore.getDoc('magic_links', id)   // null when missing
+//   CouchbeamStore.isConfigured()
+//   await CouchbeamStore.createDoc('magic_links', id, { ... })
+//   await CouchbeamStore.getDoc('magic_links', id)   // null when missing
 //
 // UMD: works in the browser (window.QuickbeamStore) and under Node (require).
 
@@ -31,7 +31,7 @@
     }
 
     function NotConfiguredError() {
-        var e = new Error('Quickbeam: Firebase project is not configured yet (see docs/firebase-spark-launch.md).');
+        var e = new Error('Couchbeam: Firebase project is not configured yet (see docs/firebase-spark-launch.md).');
         e.name = 'NotConfiguredError';
         return e;
     }
@@ -57,7 +57,7 @@
             Object.keys(v).forEach(function (k) { fields[k] = encodeValue(v[k]); });
             return { mapValue: { fields: fields } };
         }
-        throw new Error('Quickbeam: unsupported Firestore value type: ' + typeof v);
+        throw new Error('Couchbeam: unsupported Firestore value type: ' + typeof v);
     }
 
     function decodeValue(wrapped) {
@@ -104,7 +104,7 @@
     function checkHttp(res) {
         if (res.status === 404) return null;
         if (!res.ok) {
-            var err = new Error('Quickbeam: Firestore request failed (HTTP ' + res.status + ').');
+            var err = new Error('Couchbeam: Firestore request failed (HTTP ' + res.status + ').');
             err.status = res.status;
             throw err;
         }

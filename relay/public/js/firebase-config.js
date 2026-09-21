@@ -1,4 +1,4 @@
-// Firebase project configuration for the Quickbeam home test.
+// Firebase project configuration for the Couchbeam home test.
 //
 // >>> NOT YET CREATED. <<<
 // Fill these in AFTER creating the Firebase project (see
@@ -9,8 +9,8 @@
 // client code. Security comes from firestore.rules, not from hiding this key.
 
 window.QuickbeamConfig = {
-    // Firebase project id, e.g. "quickbeam-hometest". PLACEHOLDER until created.
-    projectId: 'quickbeam-spark-PLACEHOLDER',
+    // Firebase project id, e.g. "couchbeam-hometest". PLACEHOLDER until created.
+    projectId: 'couchbeam-spark-PLACEHOLDER',
 
     // Web API key from the Firebase console (Project settings > General).
     // PLACEHOLDER until the project exists.

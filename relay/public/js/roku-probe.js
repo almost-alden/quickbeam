@@ -1,4 +1,4 @@
-// Mixed-content-safe Roku discovery for the Quickbeam home test.
+// Mixed-content-safe Roku discovery for the Couchbeam home test.
 //
 // The problem: Firebase Hosting serves pages over HTTPS, but Roku ECP lives
 // at http://<lan-ip>:8060. Browsers block fetch()/XHR from an HTTPS page to an
@@ -52,7 +52,7 @@
     // cannot read the response cross-origin, the load itself is the nudge).
     function submitHiddenForm(url, method) {
         if (typeof document === 'undefined') {
-            throw new Error('Quickbeam: submitHiddenForm needs a DOM.');
+            throw new Error('Couchbeam: submitHiddenForm needs a DOM.');
         }
         var iframe = document.getElementById('qb_hidden_iframe');
         if (!iframe) {

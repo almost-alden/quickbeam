@@ -40,7 +40,7 @@ describe('Firestore value codec', () => {
 describe('configuration gating', () => {
     test('isConfigured is false with the placeholder config', () => {
         globalThis.QuickbeamConfig = {
-            projectId: 'quickbeam-spark-PLACEHOLDER',
+            projectId: 'couchbeam-spark-PLACEHOLDER',
             apiKey: 'FIREBASE_WEB_API_KEY_PLACEHOLDER'
         };
         expect(store.isConfigured()).toBe(false);

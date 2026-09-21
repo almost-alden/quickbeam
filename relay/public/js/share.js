@@ -1,4 +1,4 @@
-// Share-target parsing for the Quickbeam home test (UMD).
+// Share-target parsing for the Couchbeam home test (UMD).
 //
 // The Web Share Target API delivers shared content as GET query params
 // (manifest.json: action "/share", params url/text/title). Android/ChromeOS
@@ -8,7 +8,7 @@
 // (window.QuickbeamRegistry, generated from relay/services.js).
 //
 // No network, no PII: pure functions. The caller decides what to do with the
-// preview result (share.html renders it BEFORE any Quickbeam action).
+// preview result (share.html renders it BEFORE any Couchbeam action).
 
 (function () {
     'use strict';
@@ -16,7 +16,7 @@
     function getRegistry() {
         var r = (typeof globalThis !== 'undefined' && globalThis.QuickbeamRegistry) ||
             (typeof window !== 'undefined' && window.QuickbeamRegistry);
-        if (!r) throw new Error('Quickbeam: service registry not loaded.');
+        if (!r) throw new Error('Couchbeam: service registry not loaded.');
         return r;
     }
 

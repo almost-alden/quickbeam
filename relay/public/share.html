@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Share to Quickbeam</title>
-    <meta name="description" content="Share a streaming link to Quickbeam and preview it before it plays on your Roku TV.">
+    <title>Share to Couchbeam</title>
+    <meta name="description" content="Share a streaming link to Couchbeam and preview it before it plays on your Roku TV.">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/images/icon-192.png">
     <meta name="theme-color" content="#f7f4ee">
     <style>
-        /* Messaging-first aesthetic (design direction 03), Quickbeam name.
+        /* Messaging-first aesthetic (design direction 03), Couchbeam name.
            System font stacks only. */
         :root {
             --ink: #101828; --blue: #2e7cf6; --green: #30d158;
@@ -81,11 +81,11 @@
 <body>
     <div class="wrap">
         <header class="top">
-            <a class="brand" href="/"><span class="bolt">⚡</span> Quickbeam</a>
+            <a class="brand" href="/"><span class="bolt">⚡</span> Couchbeam</a>
         </header>
 
-        <h1>Share to Quickbeam</h1>
-        <p class="lede">Preview what Quickbeam understood <b>before</b> anything plays. Nothing is sent anywhere until you create the link.</p>
+        <h1>Share to Couchbeam</h1>
+        <p class="lede">Preview what Couchbeam understood <b>before</b> anything plays. Nothing is sent anywhere until you create the link.</p>
 
         <!-- 1. Preview of the shared content -->
         <section class="card" id="preview-card">
@@ -124,7 +124,7 @@
             <ol class="steps">
                 <li>Open this site in <b>Chrome</b>.</li>
                 <li>Tap the <b>⋮ menu → “Install app”</b> (or “Add to Home screen”).</li>
-                <li>Open YouTube, Chrome, or your messages, tap <b>Share</b> — <b>Quickbeam</b> now appears as a target.</li>
+                <li>Open YouTube, Chrome, or your messages, tap <b>Share</b> — <b>Couchbeam</b> now appears as a target.</li>
                 <li>Shared links land right here for preview.</li>
             </ol>
             <p class="note">No files are downloaded for v1 — install just adds the icon and the share target.</p>
@@ -135,16 +135,16 @@
             <span class="tag warn">iPhone / iPad</span>
             <h2>The honest iOS story</h2>
             <p>iOS does <b>not</b> let web apps appear in the share sheet — that's an Apple platform limit, not something we can work around. Two paths:</p>
-            <p><b>Now (free, no app):</b> add the <b>“Send to Quickbeam” Shortcut</b>. It shows up in every app's share menu and hands the link straight to this page:</p>
+            <p><b>Now (free, no app):</b> add the <b>“Send to Couchbeam” Shortcut</b>. It shows up in every app's share menu and hands the link straight to this page:</p>
             <ol class="steps">
                 <li>Open the <b>Shortcuts</b> app and tap <b>+</b>.</li>
-                <li>Rename it <b>“Send to Quickbeam”</b>, tap <b>ⓘ → Show in Share Sheet</b>, and under <i>Share Sheet types</i> keep only <b>URLs</b> checked.</li>
+                <li>Rename it <b>“Send to Couchbeam”</b>, tap <b>ⓘ → Show in Share Sheet</b>, and under <i>Share Sheet types</i> keep only <b>URLs</b> checked.</li>
                 <li>Add action <b>“URL Encode”</b> → set its input to <b>Shortcut Input</b>.</li>
                 <li>Add action <b>“Text”</b> and type <b><span id="shortcut-base">https://HOST/share?url=</span></b> then insert the <b>URL Encoded</b> result right after the <b>=</b>.</li>
                 <li>Add action <b>“Open URLs”</b> and set it to the <b>Text</b> above. Done — it now appears under <b>Shortcuts</b> in any share sheet.</li>
             </ol>
             <p><b>Also works today:</b> <b>Add to Home Screen</b> from Safari for one-tap launching, plus the paste box above.</p>
-            <p class="note"><b>Later beta:</b> a tiny native iOS app with a real share-sheet extension — the only way to get a first-class Quickbeam icon in the iOS share sheet. That needs an Apple Developer membership, so it's a later milestone, not this home test.</p>
+            <p class="note"><b>Later beta:</b> a tiny native iOS app with a real share-sheet extension — the only way to get a first-class Couchbeam icon in the iOS share sheet. That needs an Apple Developer membership, so it's a later milestone, not this home test.</p>
         </section>
 
         <section class="card">
@@ -200,7 +200,7 @@
                 titleRow.classList.add('hidden');
                 createBtn.classList.add('hidden');
                 if (!raw) {
-                    previewBody.innerHTML = '<p class="note">Nothing shared yet — use the paste box below, or share a link to Quickbeam from another app.</p>';
+                    previewBody.innerHTML = '<p class="note">Nothing shared yet — use the paste box below, or share a link to Couchbeam from another app.</p>';
                     return;
                 }
                 var p = window.QuickbeamShare.parseSharedUrl(raw);
@@ -220,7 +220,7 @@
                 currentRaw = p.url;
                 previewBody.innerHTML =
                     '<span class="tag ok">' + esc(p.serviceName) + '</span>' +
-                    '<p>Quickbeam understood this link and can hand it to your Roku. ' +
+                    '<p>Couchbeam understood this link and can hand it to your Roku. ' +
                     'Deep-linking is experimental — the preview is shown first so there are no surprises.</p>' +
                     '<div class="preview-link">' + esc(p.url) + '</div>' +
                     '<p class="note">App ID ' + esc(p.appId) + ' · ' + esc(p.mediaType) + ' · content ' + esc(String(p.contentId).slice(0, 24)) + '…</p>';

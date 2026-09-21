@@ -1,4 +1,4 @@
-// Quickbeam data layer for the home test (UMD).
+// Couchbeam data layer for the home test (UMD).
 //
 // Two backends, one API:
 //   1. The Node relay's /api/* endpoints when the pages are served by it
@@ -21,14 +21,14 @@
     function store() {
         var s = (typeof globalThis !== 'undefined' && globalThis.QuickbeamStore) ||
             (typeof window !== 'undefined' && window.QuickbeamStore);
-        if (!s) throw new Error('Quickbeam: Firestore client (firestore-rest.js) not loaded.');
+        if (!s) throw new Error('Couchbeam: Firestore client (firestore-rest.js) not loaded.');
         return s;
     }
 
     function shareLib() {
         var s = (typeof globalThis !== 'undefined' && globalThis.QuickbeamShare) ||
             (typeof window !== 'undefined' && window.QuickbeamShare);
-        if (!s) throw new Error('Quickbeam: share parser (share.js) not loaded.');
+        if (!s) throw new Error('Couchbeam: share parser (share.js) not loaded.');
         return s;
     }
 

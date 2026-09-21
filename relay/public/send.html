@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quickbeam | Sender Dashboard</title>
+    <title>Couchbeam | Sender Dashboard</title>
     <!-- PWA & Mobile Optimization -->
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#8b5cf6">
@@ -668,7 +668,7 @@
 <body>
     <div class="card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-            <h1 style="margin: 0;">Quickbeam ⚡️</h1>
+            <h1 style="margin: 0;">Couchbeam ⚡️</h1>
             <button class="help-trigger" onclick="openModal()" title="How it works">
                 <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
             </button>
@@ -788,12 +788,12 @@
     <!-- Helper / Tutorial Modal -->
     <div id="tutorial-modal" class="modal-overlay">
         <div class="modal-content">
-            <h2 class="modal-title">Welcome to Quickbeam! ⚡️</h2>
-            <p class="modal-desc">Quickbeam is a simple, lightweight utility that lets you instantly send and play videos on a friend's Roku TV—completely free, with no accounts or sign-ins needed.</p>
+            <h2 class="modal-title">Welcome to Couchbeam! ⚡️</h2>
+            <p class="modal-desc">Couchbeam is a simple, lightweight utility that lets you instantly send and play videos on a friend's Roku TV—completely free, with no accounts or sign-ins needed.</p>
             
             <div class="step-item">
                 <div class="step-number">1</div>
-                <p class="step-text"><b>Get the Roku App</b>: Install and open the Quickbeam channel on the Roku TV. It will display a 6-digit pairing code on the screen.</p>
+                <p class="step-text"><b>Get the Roku App</b>: Install and open the Couchbeam channel on the Roku TV. It will display a 6-digit pairing code on the screen.</p>
             </div>
             <div class="step-item">
                 <div class="step-number">2</div>
@@ -1132,14 +1132,14 @@
                         const smsUrl = `sms:${contact.phone}${isiOS ? '&' : '?'}body=${encodeURIComponent(smsBody)}`;
                         window.location.href = smsUrl;
                     } else if (contact.email) {
-                        const emailSubject = 'Quickbeam Cast ⚡️';
+                        const emailSubject = 'Couchbeam Cast ⚡️';
                         const emailBody = `${senderName || 'Your friend'} sent you a video link! Open this to cast it onto your TV: ${data.relayUrl}`;
                         const mailUrl = `mailto:${contact.email}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
                         window.location.href = mailUrl;
                     } else if (navigator.share) {
                         try {
                             await navigator.share({
-                                title: 'Quickbeam Link ⚡️',
+                                title: 'Couchbeam Link ⚡️',
                                 text: `Hi ${contact.name}, ${senderName || 'Your friend'} sent you a video!`,
                                 url: data.relayUrl
                             });
@@ -1326,7 +1326,7 @@
                 const installBtn = document.createElement('button');
                 installBtn.className = 'switch-btn';
                 installBtn.innerText = '⚡️ Install App';
-                installBtn.title = 'Install Quickbeam app directly on this TV';
+                installBtn.title = 'Install Couchbeam app directly on this TV';
                 installBtn.onclick = (e) => {
                     e.stopPropagation();
                     installChannelOnTv(dev.ip);

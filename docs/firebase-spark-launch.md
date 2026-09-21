@@ -1,6 +1,6 @@
-# Quickbeam home test — Firebase Spark launch
+# Couchbeam home test — Firebase Spark launch
 
-Zero-backend home test for Quickbeam on the Firebase **Spark (no-cost) plan**.
+Zero-backend home test for Couchbeam on the Firebase **Spark (no-cost) plan**.
 No Cloud Run, no Cloud Functions, no App Hosting, no billing account, no domain
 purchase. Static Firebase Hosting serves the PWA; Cloud Firestore (Standard)
 is the shared store, written directly from browsers over REST.
@@ -82,7 +82,7 @@ public launch):
 
 Firebase Hosting is HTTPS-only. Roku ECP is `http://<lan-ip>:8060`. Browsers
 block `fetch()`/XHR from an HTTPS page to an `http://` LAN address as mixed
-content. Quickbeam handles it like this (see `js/roku-probe.js`):
+content. Couchbeam handles it like this (see `js/roku-probe.js`):
 
 - **Launch** already worked: a hidden `<form method="POST">` into a hidden
   `<iframe>` targets the Roku URL. Form navigation is not a fetch, so browsers

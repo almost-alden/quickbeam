@@ -13,8 +13,8 @@ function iconArea(icon) {
 
 describe('PWA manifest', () => {
     test('has installability basics (name, display, start_url, scope)', () => {
-        expect(manifest.name).toBe('Quickbeam');
-        expect(manifest.short_name).toBe('Quickbeam');
+        expect(manifest.name).toBe('Couchbeam');
+        expect(manifest.short_name).toBe('Couchbeam');
         expect(manifest.display).toBe('standalone');
         expect(manifest.start_url).toBe('/');
         expect(manifest.scope).toBe('/');

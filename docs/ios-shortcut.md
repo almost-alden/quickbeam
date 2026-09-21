@@ -1,20 +1,20 @@
-# iOS share path for Quickbeam — the $0 beta recipe
+# iOS share path for Couchbeam — the $0 beta recipe
 
 **The honest platform truth:** iOS Safari does not support the Web Share Target
-API, and no PWA, website, or configuration can put Quickbeam in the iOS share
+API, and no PWA, website, or configuration can put Couchbeam in the iOS share
 sheet. That is an Apple platform limit. What follows are the real options,
 in order.
 
-## Option A — "Send to Quickbeam" Shortcut (now, $0, no review)
+## Option A — "Send to Couchbeam" Shortcut (now, $0, no review)
 
 A Shortcut with share-sheet visibility **does** appear in every iOS app's
 share menu (under the Shortcuts row). It grabs the shared URL and opens the
-Quickbeam `/share` page with it. This is the beta path.
+Couchbeam `/share` page with it. This is the beta path.
 
 ### Setup (do once per iPhone/iPad)
 
 1. Open the **Shortcuts** app and tap **+** (new shortcut).
-2. Tap the name at the top, rename it **“Send to Quickbeam”**.
+2. Tap the name at the top, rename it **“Send to Couchbeam”**.
 3. Tap **ⓘ** (details) → turn on **Show in Share Sheet**.
 4. Under *Share Sheet types*, uncheck everything except **URLs**.
 5. Add action: search **“URL Encode”**, add it, and set its input to
@@ -35,7 +35,7 @@ Quickbeam `/share` page with it. This is the beta path.
 ### Use
 
 In YouTube, Safari, Chrome, Messages, or any app: **Share → Shortcuts →
-Send to Quickbeam**. The `/share` page opens with the link pre-loaded:
+Send to Couchbeam**. The `/share` page opens with the link pre-loaded:
 preview it, tap **Create magic link**, and open the result on the home phone.
 
 ### Troubleshooting
@@ -55,7 +55,7 @@ the bookmark.
 
 ## Option C — Native iOS app with Share Extension (late beta)
 
-The **only** way to get a first-class Quickbeam icon directly in the iOS
+The **only** way to get a first-class Couchbeam icon directly in the iOS
 share sheet is a native app with a Share Extension. That requires:
 
 - Apple Developer Program membership (**$99/year** — a spend decision),

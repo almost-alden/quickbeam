@@ -60,7 +60,7 @@ describe('beta honesty wording', () => {
         expect(read('share.html')).not.toMatch(/couchdrop/i);
     });
 
-    test('landing uses the Quickbeam name', () => {
-        expect(read('index.html')).toMatch(/Quickbeam/);
+    test('landing uses the Couchbeam name', () => {
+        expect(read('index.html')).toMatch(/Couchbeam/);
     });
 });

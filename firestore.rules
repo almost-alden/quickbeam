@@ -1,4 +1,4 @@
-// Firestore security rules — the security boundary for the Quickbeam home test.
+// Firestore security rules — the security boundary for the Couchbeam home test.
 //
 // Model: there is NO backend. Browsers talk to Firestore directly over REST.
 // These rules are what keeps that safe:
