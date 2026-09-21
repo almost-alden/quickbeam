@@ -1,91 +1,51 @@
-const devices = new Map(); // Public IP -> Map(deviceId -> { localIp, deviceName, lastSeen })
-const pairingCodes = new Map(); // pairingCode -> { publicIp, localIp, deviceId, deviceName, lastSeen }
+/**
+ * Device registry — backward-compatible API over the shared store.
+ *
+ * Previously this module held process-local Maps; it now delegates to the
+ * store interface (./store), so device and pairing-code state survives
+ * application-instance replacement when QB_STORE=firestore.
+ *
+ * NOTE: these functions are now async — callers must await them.
+ */
 
-function registerDevice(publicIp, localIp, deviceId = 'default', deviceName = 'Roku Device', pairingCode = null) {
-    const normalizedIp = publicIp.replace('::ffff:', '');
-    
-    // 1. Register in the IP-based map
-    if (!devices.has(normalizedIp)) {
-        devices.set(normalizedIp, new Map());
-    }
-    const ipDevices = devices.get(normalizedIp);
-    ipDevices.set(deviceId, {
-        localIp,
-        deviceName,
-        lastSeen: Date.now()
-    });
-    console.log(`[Registry] Registered device at ${normalizedIp} (ID: ${deviceId}, Name: ${deviceName}, Local: ${localIp})`);
+const { createStore } = require('./store');
 
-    // 2. Register pairing code if provided
-    if (pairingCode) {
-        pairingCodes.set(pairingCode, {
-            publicIp: normalizedIp,
-            localIp,
-            deviceId,
-            deviceName,
-            lastSeen: Date.now()
-        });
-        console.log(`[Registry] Registered pairing code ${pairingCode} for device ${deviceId}`);
+let defaultStore = null;
+function getDefaultStore() {
+    if (!defaultStore) {
+        defaultStore = createStore();
     }
+    return defaultStore;
 }
 
-function getDevicesByPublicIp(publicIp) {
-    const normalizedIp = publicIp.replace('::ffff:', '');
-    const ipDevices = devices.get(normalizedIp);
-    if (!ipDevices) return [];
-
-    const activeDevices = [];
-    const now = Date.now();
-    const ttl = 1000 * 60 * 60; // 1 hour TTL
-
-    for (const [deviceId, device] of ipDevices.entries()) {
-        if (now - device.lastSeen < ttl) {
-            activeDevices.push({
-                deviceId,
-                localIp: device.localIp,
-                deviceName: device.deviceName,
-                lastSeen: device.lastSeen
-            });
-        } else {
-            // Clean up expired device
-            ipDevices.delete(deviceId);
-        }
-    }
-
-    if (ipDevices.size === 0) {
-        devices.delete(normalizedIp);
-    }
-
-    return activeDevices;
+// Test hook: drop the cached default store so a fresh one is built.
+function _resetDefaultStore() {
+    defaultStore = null;
 }
 
-function findDeviceByPairingCode(code) {
-    const device = pairingCodes.get(code);
-    if (!device) return null;
-
-    const ttl = 1000 * 60 * 60; // 1 hour TTL
-    if (Date.now() - device.lastSeen < ttl) {
-        return device;
-    } else {
-        // Clean up expired code
-        pairingCodes.delete(code);
-        return null;
-    }
+async function registerDevice(publicIp, localIp, deviceId = 'default', deviceName = 'Roku Device', pairingCode = null) {
+    return getDefaultStore().registerDevice(publicIp, localIp, deviceId, deviceName, pairingCode);
 }
 
-// Periodically clean up expired pairing codes
+async function getDevicesByPublicIp(publicIp) {
+    return getDefaultStore().getDevicesByPublicIp(publicIp);
+}
+
+async function findDeviceByPairingCode(code) {
+    return getDefaultStore().findDeviceByPairingCode(code);
+}
+
+// Periodically clean up expired records.
+// (For the Firestore adapter this is a no-op: TTL is enforced on read and
+// a Firestore TTL policy reclaims documents server-side.)
 const cleanupInterval = setInterval(() => {
-    const now = Date.now();
-    const ttl = 1000 * 60 * 60; // 1 hour TTL
-    for (const [code, device] of pairingCodes.entries()) {
-        if (now - device.lastSeen > ttl) {
-            pairingCodes.delete(code);
-        }
-    }
+    getDefaultStore().cleanupExpired().catch((e) => {
+        console.error('[Registry] cleanup failed:', e && e.message);
+    });
 }, 10 * 60 * 1000); // Every 10 minutes
 
 if (typeof cleanupInterval.unref === 'function') {
     cleanupInterval.unref();
 }
 
-module.exports = { registerDevice, getDevicesByPublicIp, findDeviceByPairingCode };
+module.exports = { registerDevice, getDevicesByPublicIp, findDeviceByPairingCode, _resetDefaultStore };

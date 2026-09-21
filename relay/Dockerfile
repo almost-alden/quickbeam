@@ -14,7 +14,8 @@ COPY package*.json ./
 RUN npm ci --only=production
 
 # Copy application source code
-COPY server.js registry.js deeplink.js ./
+COPY server.js registry.js deeplink.js services.js ./
+COPY store/ ./store/
 COPY public/ ./public/
 
 # Cloud Run automatically sets the PORT env variable and expects the container to listen on it
