@@ -1,7 +1,15 @@
 const request = require('supertest');
 const app = require('../server');
+const { publicServices } = require('../services');
 
 describe('Relay Server API', () => {
+
+    test('GET /api/services returns public services registry', async () => {
+        const res = await request(app).get('/api/services');
+        expect(res.status).toBe(200);
+        expect(res.body).toEqual(publicServices());
+    });
+
     test('POST /api/create -> GET /api/resolve', async () => {
         const createRes = await request(app)
             .post('/api/create')
