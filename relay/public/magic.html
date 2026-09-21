@@ -500,7 +500,7 @@
                 <ul style="margin: 0; padding-left: 1.2rem; color: var(--text-secondary);">
                     <li>Ensure your phone is connected to your **home Wi-Fi network** (not cellular data).</li>
                     <li>Verify the TV's IP address matches exactly under **Settings &gt; Network &gt; About** on your Roku screen.</li>
-                    <li>Some routers block local network communication (AP/Client Isolation). If so, manual IP pairing might be needed.</li>
+                    <li>Some routers block local network communication (AP/Client Isolation). If so, manual IP entry might be needed.</li>
                 </ul>
             </div>
         </div>
@@ -552,6 +552,23 @@
                 document.getElementById('instruction').innerText = "Pair this TV to your phone to receive videos.";
                 document.getElementById('content-info').innerText = "Couchbeam TV Pairing";
                 autoDetectedDevices = [];
+                // Pairing-link mode: ?pair=<deviceToken> — the token is the
+                // unguessable device-registration id. Resolve it and save the
+                // TV as this phone's active device.
+                const pairToken = new URL(window.location.href).searchParams.get('pair');
+                if (pairToken) {
+                    const paired = await resolvePairingToken(pairToken);
+                    if (paired) {
+                        document.getElementById('sender-msg').innerText = "TV paired ✓";
+                        document.getElementById('instruction').innerText = "This phone will now send videos to that TV.";
+                    } else {
+                        document.getElementById('no-device-status-box').innerText = "⚠️ Pairing link not found or expired.";
+                        document.getElementById('no-device-status-box').className = "status error";
+                        document.getElementById('no-device-status-box').style.display = 'block';
+                    }
+                    initDeviceSelection();
+                    return;
+                }
                 initDeviceSelection();
                 return;
             }
@@ -592,11 +609,13 @@
             }
         }
 
-        // Auto-resolve pairing codes from SMS/Contact config
-        async function resolvePairingCode(code) {
+        // Resolve a pairing LINK token (?pair=<deviceId>): the token is the
+        // unguessable device-registration id. Legacy relay ?code= values only
+        // work against the Node relay's /api (its own short-code model).
+        async function resolvePairingToken(token) {
             try {
                 // Data layer (js/qb.js): relay /api first, Firestore fallback.
-                const data = await window.Quickbeam.resolvePairingCode(code);
+                const data = await window.Quickbeam.resolvePairingToken(token);
                 if (!data.error && data.localIp) {
                     const dev = { localIp: data.localIp, deviceName: data.deviceName };
                     // Add to manual devices list if not already present
@@ -609,7 +628,7 @@
                 return true;
                 }
             } catch (e) {
-                console.error("Failed to auto-resolve pairing code:", e);
+                console.error("Failed to resolve pairing link:", e);
             }
             return false;
         }
@@ -622,13 +641,15 @@
             // Render device list into selector panel
             renderDeviceList(manualDevices);
 
-            // 1. Resolve pairing code if passed in URL query param or saved in linkData
+            // 1. Resolve a pairing link (?pair=<token>) or a legacy relay
+            //    pairing code (?code= / saved in linkData) if present.
             const parsedUrl = new URL(window.location.href);
+            const pairToken = parsedUrl.searchParams.get('pair');
             const queryCode = parsedUrl.searchParams.get('code');
-            const codeToResolve = queryCode || (linkData && linkData.pairingCode);
+            const codeToResolve = pairToken || queryCode || (linkData && linkData.pairingCode);
 
             if (codeToResolve) {
-                const success = await resolvePairingCode(codeToResolve);
+                const success = await resolvePairingToken(codeToResolve);
                 if (success) return;
             }
 

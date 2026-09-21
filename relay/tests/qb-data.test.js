@@ -9,7 +9,7 @@ const docs = {};
 globalThis.QuickbeamStore = {
     isConfigured: () => true,
     newMagicLinkId: () => 'testLinkId22charsAbC123',
-    newPairingCode: () => 'QK7X2P',
+    newDeviceId: () => 'testDeviceId22charsXyZ9',
     createDoc: (collection, id, doc) => {
         created.push({ collection, id, doc });
         docs[collection + '/' + id] = doc;
@@ -83,33 +83,51 @@ describe('getMagicLink', () => {
     });
 });
 
-describe('device registration + pairing codes', () => {
+describe('device registration + pairing links', () => {
     test('rejects non-LAN addresses before any write', async () => {
         await expect(qb.registerDevice({ localIp: '8.8.8.8', deviceId: 'd1' }))
             .rejects.toMatchObject({ code: 'invalid-ip' });
     });
 
-    test('writes devices + pairing_codes docs on static hosting', async () => {
+    test('writes a devices doc with 30d expiry and returns a pairing link', async () => {
         const r = await qb.registerDevice({
-            localIp: '192.168.1.20', deviceId: 'roku-living', deviceName: 'Living Room'
+            localIp: '192.168.1.20', deviceName: 'Living Room'
         });
-        expect(r.pairingCode).toBe('QK7X2P');
+        expect(r.deviceId).toBe('testDeviceId22charsXyZ9');
+        expect(r.pairingLink).toContain('/magic.html?pair=testDeviceId22charsXyZ9');
         const dev = created.find((c) => c.collection === 'devices');
-        const code = created.find((c) => c.collection === 'pairing_codes');
+        expect(dev.id).toBe('testDeviceId22charsXyZ9');
         expect(dev.doc.localIp).toBe('192.168.1.20');
-        expect(code.doc.deviceId).toBe('roku-living');
-        expect(code.doc.expiresAt.getTime() - code.doc.createdAt.getTime())
-            .toBe(60 * 60 * 1000);
+        expect(dev.doc.deviceName).toBe('Living Room');
+        expect(dev.doc.expiresAt.getTime() - dev.doc.createdAt.getTime())
+            .toBe(30 * 24 * 60 * 60 * 1000);
+        // no six-character cloud pairing-code doc is ever written
+        expect(created.some((c) => c.collection === 'pairing_codes')).toBe(false);
     });
 
-    test('resolvePairingCode follows code -> device', async () => {
-        const r = await qb.resolvePairingCode('qk7x2p'); // lowercase ok
+    test('resolvePairingToken follows token -> device', async () => {
+        const r = await qb.resolvePairingToken('testDeviceId22charsXyZ9');
         expect(r.localIp).toBe('192.168.1.20');
         expect(r.deviceName).toBe('Living Room');
     });
 
-    test('unknown code -> error, not a throw', async () => {
-        const r = await qb.resolvePairingCode('ZZZZZZ');
+    test('expired device -> error (client-enforced expiry)', async () => {
+        docs['devices/old-device-token-22ch'] = {
+            localIp: '192.168.1.21', deviceName: 'Old TV',
+            createdAt: new Date(Date.now() - 31 * 24 * 3600 * 1000),
+            expiresAt: new Date(Date.now() - 3600 * 1000)
+        };
+        const r = await qb.resolvePairingToken('old-device-token-22ch');
+        expect(r.error).toMatch(/not found|expired/i);
+    });
+
+    test('unknown token -> error, not a throw', async () => {
+        const r = await qb.resolvePairingToken('no-such-device-token-1');
         expect(r.error).toMatch(/not found/i);
+    });
+
+    test('pairingLinkFor builds the /magic.html?pair= URL', () => {
+        expect(qb.pairingLinkFor('testDeviceId22charsXyZ9'))
+            .toContain('/magic.html?pair=testDeviceId22charsXyZ9');
     });
 });

@@ -15,6 +15,10 @@
 //                    The device is stored "unverified" and promoted to
 //                    "verified" after the user's first acknowledged launch.
 //
+// EXPERIMENTAL: the cross-scheme form/iframe launch is not verified on real
+// phone + Roku hardware yet. Do not describe it as verified from unit tests —
+// the tests cover the URL builders and strategy selection only.
+//
 // UMD: window.QuickbeamProbe in the browser, require() under Node.
 
 (function () {

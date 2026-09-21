@@ -17,8 +17,8 @@ touches the Roku. So the relay's jobs collapse to things the client can do:
 | Relay job | Spark replacement |
 |---|---|
 | Parse streaming URLs (registry) | Baked client-side: `js/registry-client.js` (generated from `relay/services.js`) |
-| Magic-link storage + TTL | Firestore `magic_links`, 24h `expiresAt`, capability-URL ids |
-| Device registration / pairing | Firestore `devices` + `pairing_codes` (1h), written by the home browser |
+| Magic-link storage + expiry | Firestore `magic_links`, 24h `expiresAt`, capability-URL ids (expiry enforced client-side; Spark has no free TTL deletes) |
+| Device registration / pairing | Firestore `devices` (30d `expiresAt`, capability-URL ids), paired via pairing LINK — no typed codes |
 | Serve the pages | Firebase Hosting (static) |
 
 The Node relay (`relay/server.js`) is **not deployed** in this plan. It remains
@@ -40,10 +40,15 @@ public launch):
 - **Title scraping.** The relay's `scrapeTitle` fetched the source page
   server-side; browsers can't (CORS). Senders type titles manually for now.
 - **Service requests** (`/api/service-request`) still need the Node relay.
-- **TTL enforcement is client-side + TTL policy.** Rules cap `expiresAt`
-  (25h/65m); set a Firestore TTL policy on `expiresAt` in the console so
-  expired docs are actually deleted. Until then, `qb.js` treats expired docs
-  as 410.
+- **Expired documents are NOT deleted automatically.** Firestore TTL deletes
+  have no free usage on the Spark plan — enabling them requires a billing
+  account, which this plan forbids
+  (https://firebase.google.com/docs/firestore/pricing). Rules cap `expiresAt`
+  (magic_links ≤ 25h, devices ≤ 30d) and `qb.js` treats expired docs as 410
+  (client-side expiry rejection), but expired documents **remain stored** in
+  the home-test database. Bounded accumulation is accepted for the home test;
+  cleanup is a manual owner step: delete expired documents in the Firebase
+  console (Firestore → select the collection → delete documents).
 
 ## Deploy steps (do NOT run without the user's explicit approval)
 
@@ -52,12 +57,10 @@ public launch):
 2. In the console: **Firestore Database → Create database → Standard edition**,
    same region as your users (e.g. `us-east1`).
 3. **Firestore → Rules**: paste `firestore.rules` from this repo, publish.
-4. **Firestore → TTL policies**: add a TTL policy on the `expiresAt` field for
-   `magic_links` and `pairing_codes`.
-5. Fill in `relay/public/js/firebase-config.js` with the real project id and
+4. Fill in `relay/public/js/firebase-config.js` with the real project id and
    Web API key (Project settings → General). The key is public by design;
    security comes from the rules, not the key.
-6. `npx firebase-tools deploy --only hosting,firestore:rules`
+5. `npx firebase-tools deploy --only hosting,firestore:rules`
    (firebase.json points hosting at `relay/public`).
 
 > ### ⚠️ HARD WARNING — billing upgrades the project to Blaze
@@ -84,9 +87,12 @@ Firebase Hosting is HTTPS-only. Roku ECP is `http://<lan-ip>:8060`. Browsers
 block `fetch()`/XHR from an HTTPS page to an `http://` LAN address as mixed
 content. Couchbeam handles it like this (see `js/roku-probe.js`):
 
-- **Launch** already worked: a hidden `<form method="POST">` into a hidden
+- **Launch** (experimental): a hidden `<form method="POST">` into a hidden
   `<iframe>` targets the Roku URL. Form navigation is not a fetch, so browsers
   permit it. (`magic.html` has used this trick; `roku-probe.js` centralizes it.)
+  **This is unverified on real phone + Roku hardware** — it is labeled
+  experimental until tested on the owner's devices. Unit tests cover the URL
+  builders and strategy selection only; they do not verify the launch itself.
 - **Device discovery** (`/query/device-info`) cannot use `fetch()` on HTTPS —
   and the response couldn't be read cross-origin anyway. So on `https:` pages
   `probeStrategy()` returns `'manual-confirm'`: the address is stored as an
@@ -100,10 +106,11 @@ content. Couchbeam handles it like this (see `js/roku-probe.js`):
 
 - [ ] Default deny present (`match /{document=**} { allow read, write: if false; }`).
 - [ ] No `allow ... if true` anywhere except none — every allow is scoped.
-- [ ] `allow list: if false` on all three collections (no enumeration).
-- [ ] `allow get` only with an id-shape regex (capability URLs).
+- [ ] `allow list: if false` on both collections (no enumeration).
+- [ ] `allow get` only with an unguessable id-shape regex (capability URLs).
 - [ ] `create` uses `keys().hasOnly([...])` — no extra fields smuggled in.
-- [ ] `expiresAt` bounded: magic_links ≤ createdAt + 25h, pairing_codes ≤ +65m.
+- [ ] `expiresAt` bounded: magic_links ≤ createdAt + 25h, devices ≤ createdAt + 30d.
+- [ ] No typed-code pairing collection — pairing is by link (unguessable device id) only.
 - [ ] `localIp` restricted to RFC 1918 regexes.
 - [ ] `originalUrl` must start with `https://`.
 - [ ] No `update`/`delete` allowed from clients.
@@ -112,18 +119,37 @@ content. Couchbeam handles it like this (see `js/roku-probe.js`):
 (The Jest suite asserts the static properties of this list; the semantic
 review is a human pass before first deploy.)
 
-## No-PII statement
+## Data inventory (what is stored)
 
-The Firestore magic-link model carries **no** sender name, contact, or
-identifier fields — there is nothing to leak. Device docs carry only a LAN IP
-and a TV label. No analytics, no trackers, no third-party scripts anywhere in
-the served pages (Firestore is reached via first-party `fetch`, not the
-gstatic SDK). Verified by `relay/tests/no-pii.test.js`.
+The exact fields per collection — this is the whole model. No contact, ZIP,
+signup, analytics ID, or sender-identity fields exist anywhere.
+
+| Collection | Fields |
+|---|---|
+| `magic_links` | `appId` (Roku channel id, string ≤ 16), `contentId` (≤ 256), `mediaType` (allowlist), `serviceName` (≤ 80), `videoTitle` (≤ 200), `originalUrl` (https-only, ≤ 2048), `createdAt`, `expiresAt` (≤ createdAt + 25h) |
+| `devices` | `localIp` (RFC 1918 LAN address only), `deviceName` (TV label, ≤ 80), `createdAt`, `expiresAt` (≤ createdAt + 30d) |
+
+Document ids are 128-bit crypto-random capability URLs (22 base64url chars);
+reads are get-by-known-id only, list/query are denied, and clients cannot
+update or delete. LAN IPs and TV labels are device/network data — handled as
+test-only data, never combined with identity.
+
+**Retention:** expired documents REMAIN STORED until the owner deletes them
+manually in the Firebase console. Firestore TTL deletes have no free usage on
+the Spark plan (https://firebase.google.com/docs/firestore/pricing), and this
+plan never enables billing. Bounded accumulation is accepted for the home
+test.
+
+**Test-only warning:** this store is for the family home test only. Do not
+use it for public traffic without rate limiting, App Check, and a real
+retention/deletion policy (see "Remaining backend dependency").
+
+Verified by `relay/tests/no-pii.test.js`.
 
 ## What was salvaged from PR #26 (GCP plan)
 
-- The **store interface design and data model** (magic links with TTL,
-  device/pairing records, cross-user isolation thinking) — re-expressed as
+- The **store interface design and data model** (magic links with
+  client-enforced expiry, device/pairing-link records) — re-expressed as
   Firestore collections + client REST instead of Admin SDK adapters.
 - The **no-PII page assertions** approach, extended to the new pages.
 - The **demo beta wording** (free demo, experimental compatibility,

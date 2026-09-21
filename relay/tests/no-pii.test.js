@@ -64,3 +64,52 @@ describe('beta honesty wording', () => {
         expect(read('index.html')).toMatch(/Couchbeam/);
     });
 });
+
+describe('home-test data inventory & Spark honesty (docs + rules)', () => {
+    const DOC = path.join(__dirname, '..', '..', 'docs', 'firebase-spark-launch.md');
+    const doc = fs.readFileSync(DOC, 'utf8');
+    const RULES = path.join(__dirname, '..', '..', 'firestore.rules');
+    const rules = fs.readFileSync(RULES, 'utf8');
+    const PROBE = fs.readFileSync(path.join(PUBLIC, 'js', 'roku-probe.js'), 'utf8');
+
+    test('docs carry an exact data inventory with every collection and field', () => {
+        expect(doc).toMatch(/Data inventory/);
+        expect(doc).toMatch(/magic_links/);
+        expect(doc).toMatch(/devices/);
+        expect(doc).not.toMatch(/pairing_codes/); // gone: pairing is by link
+        ['appId', 'contentId', 'mediaType', 'serviceName', 'videoTitle',
+            'originalUrl', 'createdAt', 'expiresAt', 'localIp', 'deviceName']
+            .forEach((f) => expect(doc).toContain(f));
+    });
+
+    test('docs name what is NOT collected: no contact/ZIP/signup/analytics/sender identity', () => {
+        expect(doc).toMatch(/No contact, ZIP/i);
+        expect(doc).toMatch(/signup/i);
+        expect(doc).toMatch(/analytics/i);
+        expect(doc).toMatch(/sender-identity/i);
+    });
+
+    test('docs state expired docs REMAIN STORED and cite the Spark pricing page', () => {
+        expect(doc).toMatch(/remain stored/i);
+        expect(doc).toMatch(/firebase\.google\.com\/docs\/firestore\/pricing/);
+        expect(doc).not.toMatch(/TTL polic/i); // TTL deletes are not free on Spark
+    });
+
+    test('docs carry a test-only warning', () => {
+        expect(doc).toMatch(/test-only/i);
+    });
+
+    test('no "nothing to leak" or "cross-user isolation" phrasing anywhere', () => {
+        [doc, rules].forEach((text) => {
+            expect(text).not.toMatch(/nothing to leak/i);
+            expect(text).not.toMatch(/cross-user isolation/i);
+        });
+    });
+
+    test('docs + probe label the HTTPS->LAN launch experimental (not verified)', () => {
+        const mc = doc.split('## Mixed-content engineering')[1] || '';
+        expect(mc).toMatch(/experimental/i);
+        expect(mc).toMatch(/unverified on real/i);
+        expect(PROBE).toMatch(/EXPERIMENTAL/);
+    });
+});
