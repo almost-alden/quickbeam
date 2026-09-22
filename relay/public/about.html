@@ -6,7 +6,7 @@
     <title>Couchbeam | Learn More & User Manual</title>
     <!-- PWA & Mobile Optimization -->
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#8b5cf6">
+    <meta name="theme-color" content="#f7f4ee">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="/images/icon-512.png">
@@ -16,24 +16,44 @@
     
     <style>
         :root {
-            --bg-color: #0b0f19;
-            --card-bg: rgba(20, 26, 45, 0.6);
-            --card-border: rgba(255, 255, 255, 0.08);
-            --text-primary: #f3f4f6;
-            --text-secondary: #9ca3af;
-            --primary: #8b5cf6;
-            --primary-hover: #7c3aed;
-            --primary-glow: rgba(139, 92, 246, 0.3);
-            --accent: #6366f1;
+            /* Couchdrop warm visual direction (messaging-first aesthetic).
+               Same variable names as the old theme so existing selectors,
+               markup and JS keep working unchanged. */
+            --bg-color: #f7f4ee;
+            --card-bg: #ffffff;
+            --card-border: #e8e2d4;
+            --text-primary: #101828;
+            --text-secondary: #3d4756;
+            --primary: #2e7cf6;
+            --primary-hover: #1f6ae0;
+            --primary-glow: rgba(46, 124, 246, 0.25);
+            --accent: #2e7cf6;
+
+            --success: #30d158;
+            --success-bg: #e5f9ec;
+            --success-border: #b7e4c7;
+            --success-text: #0c6b2a;
+
+            --warning: #f59e0b;
+            --warning-bg: #fff4e0;
+            --warning-border: #eed9a8;
+            --warning-text: #8a5a00;
+
+            --error: #d92d20;
+            --error-bg: #fdecec;
+            --error-border: #f3c2c2;
+            --error-text: #a12020;
+
+            --info: #2e7cf6;
+            --info-bg: #eef4ff;
+            --info-border: #c9dcff;
+            --info-text: #1f5fc4;
         }
 
         body {
             font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
             background-color: var(--bg-color);
-            background-image: 
-                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
-                radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.15) 0px, transparent 50%);
-            background-attachment: fixed;
+
             color: var(--text-primary);
             display: flex;
             flex-direction: column;
@@ -53,12 +73,10 @@
 
         .card {
             background: var(--card-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--card-border);
             padding: 3rem;
             border-radius: 24px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 8px 24px rgba(16, 24, 40, 0.08);
             box-sizing: border-box;
             position: relative;
             overflow: hidden;
@@ -73,7 +91,7 @@
             left: 0;
             right: 0;
             height: 4px;
-            background: linear-gradient(90deg, #6366f1, #8b5cf6, #ec4899);
+            background: var(--primary);
         }
 
         .header {
@@ -90,9 +108,7 @@
             font-weight: 700;
             margin: 0;
             letter-spacing: -0.025em;
-            background: linear-gradient(to right, #a5b4fc, #c084fc);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: var(--text-primary);
             display: flex;
             align-items: center;
             gap: 0.75rem;
@@ -101,7 +117,7 @@
         h2 {
             font-size: 1.35rem;
             font-weight: 600;
-            color: #c084fc;
+            color: #2e7cf6;
             margin-top: 2.5rem;
             margin-bottom: 0.75rem;
             letter-spacing: -0.01em;
@@ -136,7 +152,7 @@
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(16, 24, 40, 0.05);
             border: 1px solid var(--card-border);
             color: var(--text-primary);
             padding: 0.6rem 1.2rem;
@@ -149,15 +165,15 @@
         }
 
         .btn-back:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: rgba(255, 255, 255, 0.2);
+            background: rgba(16, 24, 40, 0.1);
+            border-color: rgba(16, 24, 40, 0.2);
             transform: translateY(-1px);
         }
 
         .step-badge {
-            background: rgba(139, 92, 246, 0.15);
-            border: 1px solid rgba(139, 92, 246, 0.3);
-            color: #c084fc;
+            background: rgba(46, 124, 246, 0.15);
+            border: 1px solid rgba(46, 124, 246, 0.3);
+            color: #2e7cf6;
             padding: 0.15rem 0.5rem;
             border-radius: 6px;
             font-size: 0.8rem;
@@ -216,6 +232,7 @@
                 gap: 1rem;
             }
         }
+        :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
     </style>
 </head>
 <body>
@@ -223,7 +240,7 @@
         <div class="card">
             <div class="header">
                 <h1>
-                    <svg class="icon" viewBox="0 0 24 24" style="color: #c084fc; width: 28px; height: 28px;">
+                    <svg class="icon" viewBox="0 0 24 24" style="color: #2e7cf6; width: 28px; height: 28px;">
                         <circle cx="12" cy="12" r="10"/>
                         <line x1="12" y1="16" x2="12" y2="12"/>
                         <line x1="12" y1="8" x2="12.01" y2="8"/>
