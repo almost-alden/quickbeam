@@ -1,16 +1,17 @@
 // theme-tokens.test.js: Couchdrop warm visual direction regression guard.
 //
-// The six rethemed pages (send, magic, about, support, privacy, terms) must
-// stay on the warm Couchdrop palette. This test FAILS if any of them
-// reintroduces the old Quickbeam black/purple theme tokens (#0b0f19, #8b5cf6,
-// purple/pink gradients). Semantic error/success/warning colors are allowed.
+// The warm-themed pages (the six rethemed by PR #32 plus the test-share page,
+// warm from birth) must stay on the warm Couchdrop palette. This test FAILS
+// if any of them reintroduces the old Quickbeam black/purple theme tokens
+// (#0b0f19, #8b5cf6, purple/pink gradients). Semantic error/success/warning
+// colors are allowed.
 
 const fs = require('fs');
 const path = require('path');
 
 const PUBLIC = path.join(__dirname, '..', 'public');
 const RETHEMED = ['send.html', 'magic.html', 'about.html', 'support.html',
-    'privacy.html', 'terms.html'];
+    'privacy.html', 'terms.html', 'test-share.html'];
 
 // Old-theme tokens that must never come back on the rethemed pages.
 const BANNED = [
