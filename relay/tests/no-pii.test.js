@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 
 const PUBLIC = path.join(__dirname, '..', 'public');
-const PAGES = ['index.html', 'share.html', 'send.html', 'magic.html', 'about.html', 'privacy.html', 'terms.html', 'support.html'];
+const PAGES = ['index.html', 'share.html', 'send.html', 'magic.html', 'about.html', 'privacy.html', 'terms.html', 'support.html', 'test.html'];
 
 function read(page) {
     return fs.readFileSync(path.join(PUBLIC, page), 'utf8');
