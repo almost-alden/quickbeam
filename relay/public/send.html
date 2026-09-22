@@ -673,7 +673,7 @@
                 <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
             </button>
         </div>
-        <p>Send a video to a friend's Roku instantly.</p>
+        <p>Send a video link to a friend — they open it on their phone and pair their own Roku.</p>
         
         <label for="senderName">Your Name</label>
         <div class="input-group">
@@ -722,11 +722,9 @@
             
             <div class="add-contact-form" style="border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 1rem; margin-top: 0.5rem; text-align: left;">
                 <label style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.5rem; display: block; font-weight: 500;">Add New Contact</label>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem;">
+                <div style="margin-bottom: 0.5rem;">
                     <input type="text" id="newContactName" placeholder="Name (e.g. Mom)" style="padding: 0.6rem 0.8rem; font-size: 0.85rem; width: 100%; box-sizing: border-box;">
-                    <input type="text" id="newContactPairingLink" placeholder="Pairing link (optional)" style="padding: 0.6rem 0.8rem; font-size: 0.85rem; width: 100%; box-sizing: border-box;">
                 </div>
-                <p style="font-size: 0.7rem; color: var(--text-secondary); margin: 0 0 0.5rem;">Pairing link is optional — paste it if they sent you their Couchbeam pairing link, so the card shows their TV. Old 6-digit TV codes no longer work.</p>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem;">
                     <input type="text" id="newContactPhone" placeholder="Phone (SMS/WhatsApp)" style="padding: 0.6rem 0.8rem; font-size: 0.85rem; width: 100%; box-sizing: border-box;">
                     <input type="text" id="newContactEmail" placeholder="Email Address" style="padding: 0.6rem 0.8rem; font-size: 0.85rem; width: 100%; box-sizing: border-box;">
@@ -790,7 +788,7 @@
     <div id="tutorial-modal" class="modal-overlay">
         <div class="modal-content">
             <h2 class="modal-title">Welcome to Couchbeam! ⚡️</h2>
-            <p class="modal-desc">Couchbeam is a simple, lightweight utility that lets you instantly send and play videos on a friend's Roku TV—completely free, with no accounts or sign-ins needed.</p>
+            <p class="modal-desc">Couchbeam is a simple, lightweight utility that lets you send video links to a friend's phone — they open the link, pair their own Roku TV, and cast. Completely free, with no accounts or sign-ins needed.</p>
             
             <div class="step-item">
                 <div class="step-number">1</div>
@@ -798,11 +796,11 @@
             </div>
             <div class="step-item">
                 <div class="step-number">2</div>
-                <p class="step-text"><b>Add Contact</b>: Under "Quick Send", add your contact's name, plus their phone or email for direct delivery. If they sent you a pairing link, paste it to show their TV on the card.</p>
+                <p class="step-text"><b>Add Contact</b>: Under "Quick Send", add your contact's name, plus their phone or email for direct delivery.</p>
             </div>
             <div class="step-item">
                 <div class="step-number">3</div>
-                <p class="step-text"><b>Cast Instantly</b>: Paste a video URL, tap their contact card, and send it! Opening the link instantly launches the video on their TV.</p>
+                <p class="step-text"><b>Quick Send</b>: Paste a video URL, tap their contact card, and send it! They open the link on their phone and pair their own TV. Phone-to-Roku launching is experimental and unverified until tested on real hardware.</p>
             </div>
 
             <button class="modal-btn" onclick="closeModal()">Got it, let's cast!</button>
@@ -988,10 +986,11 @@
         }
 
         // Contact Management Logic
-        // Model: { name, phone, email, pairingLink, deviceName }. Pairing is a
-        // capability link, never a typed code. Pure logic lives in
-        // js/send-contacts.js (window.QuickbeamSendContacts) so Jest can test
-        // it; the functions below are thin DOM wrappers.
+        // Model: { name, phone, email } — a plain address book. Contacts store
+        // no pairing links or TV bindings; the recipient pairs their own TV
+        // after opening the link. Pure logic lives in js/send-contacts.js
+        // (window.QuickbeamSendContacts) so Jest can test it; the functions
+        // below are thin DOM wrappers.
         function getContacts() {
             return window.QuickbeamSendContacts
                 ? window.QuickbeamSendContacts.getContacts()
@@ -1002,14 +1001,12 @@
             if (window.QuickbeamSendContacts) window.QuickbeamSendContacts.saveContactsList(contacts);
         }
 
-        async function saveContact() {
+        function saveContact() {
             const nameInput = document.getElementById('newContactName');
-            const pairInput = document.getElementById('newContactPairingLink');
             const phoneInput = document.getElementById('newContactPhone');
             const emailInput = document.getElementById('newContactEmail');
 
             const name = nameInput.value.trim();
-            const pairingLink = pairInput.value.trim().replace(/\s+/g, '');
             const phone = phoneInput.value.trim().replace(/\s+/g, '');
             const email = emailInput.value.trim();
 
@@ -1021,53 +1018,13 @@
                 return alert("A contact with this name already exists.");
             }
 
-            let deviceName = '';
-            if (pairingLink) {
-                if (typeof window.Quickbeam === 'undefined') {
-                    return alert("Couchbeam is still loading — try again in a moment.");
-                }
-                try {
-                    const v = await window.QuickbeamSendContacts.validatePairingLink(window.Quickbeam, pairingLink);
-                    deviceName = v.deviceName;
-                } catch (e) {
-                    return alert(e.message);
-                }
-            }
-
-            contacts.push({ name, phone, email, pairingLink, deviceName });
+            contacts.push({ name, phone, email });
             saveContactsList(contacts);
 
             nameInput.value = '';
-            pairInput.value = '';
             phoneInput.value = '';
             emailInput.value = '';
             renderContacts();
-        }
-
-        async function repairContact(index, event) {
-            if (event) event.stopPropagation();
-            const contacts = getContacts();
-            const contact = contacts[index];
-            if (!contact) return;
-            const link = prompt(`Paste the new pairing link for ${contact.name} (from their TV):`, '');
-            if (link === null) return; // cancelled
-            if (typeof window.Quickbeam === 'undefined') {
-                return alert("Couchbeam is still loading — try again in a moment.");
-            }
-            try {
-                const v = await window.QuickbeamSendContacts.validatePairingLink(window.Quickbeam, link.trim());
-                contacts[index] = {
-                    name: contact.name,
-                    phone: contact.phone,
-                    email: contact.email,
-                    pairingLink: link.trim().replace(/\s+/g, ''),
-                    deviceName: v.deviceName
-                };
-                saveContactsList(contacts);
-                renderContacts();
-            } catch (e) {
-                alert(e.message);
-            }
         }
 
         function deleteContact(index, event) {
@@ -1112,22 +1069,6 @@
                 badgesDiv.style.fontSize = '0.7rem';
                 badgesDiv.style.color = 'var(--text-secondary)';
 
-                if (contact.pairingLink) {
-                    const b = document.createElement('span');
-                    b.innerText = '📺';
-                    b.title = 'Paired TV: ' + (contact.deviceName || 'Roku TV');
-                    badgesDiv.appendChild(b);
-                } else if (contact.needsRepair) {
-                    // Legacy 6-digit TV code: no longer works. Show a re-pair
-                    // hint instead of failing silently.
-                    const b = document.createElement('span');
-                    b.innerText = '⚠️ re-pair';
-                    b.title = 'Old 6-digit TV codes no longer work — tap to paste a fresh pairing link.';
-                    b.style.cursor = 'pointer';
-                    b.style.textDecoration = 'underline';
-                    b.onclick = (ev) => repairContact(index, ev);
-                    badgesDiv.appendChild(b);
-                }
                 if (contact.phone) {
                     const b = document.createElement('span');
                     b.innerText = '📞';

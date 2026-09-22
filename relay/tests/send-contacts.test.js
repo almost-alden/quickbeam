@@ -1,5 +1,7 @@
 // send-contacts.js: static-model quick-send contacts.
-// Pure logic is tested here with window.Quickbeam mocked; no network, no DOM.
+// Contact model is the honest { name, phone, email } address book — no
+// pairing capability links, no TV bindings, no re-pair flow. Pure logic is
+// tested here with window.Quickbeam mocked; no network, no DOM.
 
 const SC = require('../public/js/send-contacts.js');
 
@@ -22,85 +24,64 @@ afterEach(() => {
     delete globalThis.localStorage;
 });
 
-describe('extractPairingToken', () => {
-    test('extracts ?pair= from a full pairing link', () => {
-        expect(SC.extractPairingToken('https://quickbeam-prod.web.app/magic.html?pair=abcDEF1234567890xy'))
-            .toBe('abcDEF1234567890xy');
-    });
-
-    test('handles extra query params and encoded tokens', () => {
-        expect(SC.extractPairingToken('https://x.web.app/magic.html?foo=1&pair=tok%2Fen%20c'))
-            .toBe('tok/en c');
-    });
-
-    test('accepts a raw token', () => {
-        expect(SC.extractPairingToken('abcDEF1234567890xy')).toBe('abcDEF1234567890xy');
-    });
-
-    test('rejects 6-digit codes and junk', () => {
-        expect(SC.extractPairingToken('123456')).toBe('');
-        expect(SC.extractPairingToken('hello')).toBe('');
-        expect(SC.extractPairingToken('')).toBe('');
-        expect(SC.extractPairingToken(null)).toBe('');
-    });
-});
-
 describe('normalizeContact', () => {
-    test('new-model contact passes through', () => {
+    test('new-model contact passes through as {name, phone, email}', () => {
+        const c = SC.normalizeContact({ name: 'Mom', phone: '5551234567', email: 'mom@example.com' });
+        expect(c).toEqual({ name: 'Mom', phone: '5551234567', email: 'mom@example.com' });
+    });
+
+    test('pairing capability URLs are NOT retained in the contact model', () => {
         const c = SC.normalizeContact({
             name: 'Mom', phone: '5551234567', email: '',
-            pairingLink: 'https://x/magic.html?pair=tok1234567890abcdef', deviceName: 'Living Room TV'
+            pairingLink: 'https://quickbeam-prod.web.app/magic.html?pair=SECRETcapabilityToken1234567890',
+            deviceName: 'Living Room TV', code: '123456', needsRepair: true
         });
-        expect(c.name).toBe('Mom');
-        expect(c.pairingLink).toBe('https://x/magic.html?pair=tok1234567890abcdef');
-        expect(c.deviceName).toBe('Living Room TV');
-        expect(c.needsRepair).toBeUndefined();
+        expect(c).toEqual({ name: 'Mom', phone: '5551234567', email: '' });
+        expect(c).not.toHaveProperty('pairingLink');
+        expect(c).not.toHaveProperty('deviceName');
+        expect(c).not.toHaveProperty('code');
+        expect(c).not.toHaveProperty('needsRepair');
+        expect(JSON.stringify(c)).not.toContain('pair=');
     });
 
-    test('legacy 6-digit code contact is flagged needsRepair', () => {
-        const c = SC.normalizeContact({ name: 'Dad', code: '123456', phone: '', email: '' });
-        expect(c.needsRepair).toBe(true);
-        expect(c.pairingLink).toBe('');
-    });
-
-    test('legacy code already migrated to a pairing link is not flagged', () => {
-        const c = SC.normalizeContact({ name: 'Dad', code: '123456', pairingLink: 'https://x/magic.html?pair=tok1234567890abcdef' });
-        expect(c.needsRepair).toBeUndefined();
+    test('legacy 6-digit code is dropped, contact stays usable', () => {
+        const c = SC.normalizeContact({ name: 'Dad', code: '123456', phone: '5550001', email: '' });
+        expect(c).toEqual({ name: 'Dad', phone: '5550001', email: '' });
+        expect(c).not.toHaveProperty('needsRepair');
     });
 });
 
 describe('getContacts / saveContactsList', () => {
     test('round-trips through localStorage and normalizes', () => {
-        SC.saveContactsList([{ name: 'Mom', code: '999999' }]);
+        SC.saveContactsList([{ name: 'Mom', phone: '5551', email: '' }]);
         const list = SC.getContacts();
-        expect(list).toHaveLength(1);
-        expect(list[0].needsRepair).toBe(true);
-        expect(JSON.parse(globalThis.localStorage.getItem(SC.STORAGE_KEY))).toHaveLength(1);
+        expect(list).toEqual([{ name: 'Mom', phone: '5551', email: '' }]);
+    });
+
+    test('saveContactsList strips pairing fields before persisting', () => {
+        SC.saveContactsList([{
+            name: 'Mom', phone: '', email: '',
+            pairingLink: 'https://x.web.app/magic.html?pair=SECRETcapabilityToken1234567890',
+            deviceName: 'TV', code: '123456'
+        }]);
+        const raw = globalThis.localStorage.getItem(SC.STORAGE_KEY);
+        expect(raw).not.toContain('pairingLink');
+        expect(raw).not.toContain('pair=');
+        expect(raw).not.toContain('deviceName');
+        expect(JSON.parse(raw)).toEqual([{ name: 'Mom', phone: '', email: '' }]);
+    });
+
+    test('stored pairing links from older versions are dropped on load', () => {
+        globalThis.localStorage.setItem(SC.STORAGE_KEY, JSON.stringify([{
+            name: 'Mom', phone: '', email: '',
+            pairingLink: 'https://x.web.app/magic.html?pair=SECRETcapabilityToken1234567890'
+        }]));
+        expect(SC.getContacts()).toEqual([{ name: 'Mom', phone: '', email: '' }]);
     });
 
     test('returns [] on corrupt storage', () => {
         globalThis.localStorage.setItem(SC.STORAGE_KEY, 'not-json{{{');
         expect(SC.getContacts()).toEqual([]);
-    });
-});
-
-describe('validatePairingLink', () => {
-    const qbOk = { resolvePairingToken: (t) => Promise.resolve({ deviceId: t, deviceName: 'Bedroom Roku' }) };
-    const qbGone = { resolvePairingToken: () => Promise.resolve({ error: 'Pairing link not found or expired' }) };
-
-    test('resolves a valid pairing link to its device name', async () => {
-        const v = await SC.validatePairingLink(qbOk, 'https://x.web.app/magic.html?pair=tok1234567890abcdef');
-        expect(v.deviceName).toBe('Bedroom Roku');
-    });
-
-    test('rejects text that is not a pairing link', async () => {
-        await expect(SC.validatePairingLink(qbOk, '123456'))
-            .rejects.toThrow(/does not look like a Couchbeam pairing link/);
-    });
-
-    test('rejects expired/unknown links with a user-facing message', async () => {
-        await expect(SC.validatePairingLink(qbGone, 'https://x.web.app/magic.html?pair=tok1234567890abcdef'))
-            .rejects.toThrow(/not found or expired/);
     });
 });
 
@@ -125,7 +106,7 @@ describe('prepareQuickSend', () => {
         };
     }
 
-    const contact = { name: 'Mom', phone: '5551234567', email: '', pairingLink: '', deviceName: '' };
+    const contact = { name: 'Mom', phone: '5551234567', email: '' };
 
     test('creates the magic link, copies it, routes via SMS for a phone contact', async () => {
         const d = deps();
@@ -140,6 +121,14 @@ describe('prepareQuickSend', () => {
         expect(r.route.body).toContain(MAGIC);
     });
 
+    test('send copy tells the recipient to pair their own TV, never promises instant launch', async () => {
+        const d = deps();
+        const r = await SC.prepareQuickSend(d, { url: YT, videoTitle: '', senderName: 'Kid', contact });
+        expect(r.route.body).toMatch(/pair your TV/i);
+        expect(r.route.body).not.toMatch(/instant/i);
+        expect(r.route.body).not.toMatch(/instantly launches/i);
+    });
+
     test('routes via email when there is no phone', async () => {
         const d = deps();
         const r = await SC.prepareQuickSend(d, {
@@ -149,6 +138,7 @@ describe('prepareQuickSend', () => {
         expect(r.route.type).toBe('mailto');
         expect(r.route.email).toBe('mom@example.com');
         expect(r.route.body).toContain('Your friend sent you a video link!');
+        expect(r.route.body).not.toMatch(/instant/i);
     });
 
     test('falls back to manual route with no phone or email', async () => {
@@ -181,7 +171,33 @@ describe('prepareQuickSend', () => {
     });
 });
 
-describe('no-PII / no-network guardrails', () => {
+describe('page copy honesty (send.html)', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const HTML = fs.readFileSync(path.join(__dirname, '..', 'public', 'send.html'), 'utf8');
+
+    test('page contains no instant-launch claim', () => {
+        expect(HTML).not.toMatch(/instant/i);
+        expect(HTML).not.toMatch(/instantly launches/i);
+        expect(HTML).not.toMatch(/Cast Instantly/i);
+    });
+
+    test('launch is explicitly labeled experimental/unverified', () => {
+        expect(HTML).toMatch(/experimental/i);
+    });
+
+    test('tutorial says the recipient pairs their own TV', () => {
+        expect(HTML).toMatch(/pair their own (Roku )?TV/i);
+    });
+
+    test('contacts form has no pairing-link input and no re-pair prompt', () => {
+        expect(HTML).not.toContain('newContactPairingLink');
+        expect(HTML).not.toContain('re-pair');
+        expect(HTML).not.toContain('repairContact');
+    });
+});
+
+describe('no-PII / no-network / no-pairing guardrails', () => {
     const fs = require('fs');
     const path = require('path');
     const SRC = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'send-contacts.js'), 'utf8');
@@ -195,5 +211,17 @@ describe('no-PII / no-network guardrails', () => {
 
     test('module never logs contact fields', () => {
         expect(SRC).not.toMatch(/console\.(log|info|debug|warn|error)/);
+    });
+
+    test('module retains no pairing-link machinery', () => {
+        // Strip comments first: the doc block explains what was removed.
+        const CODE = SRC
+            .replace(/\/\/[^\n]*/g, '')
+            .replace(/\/\*[\s\S]*?\*\//g, '');
+        expect(CODE).not.toContain('pairingLink');
+        expect(CODE).not.toContain('validatePairingLink');
+        expect(CODE).not.toContain('extractPairingToken');
+        expect(CODE).not.toContain('needsRepair');
+        expect(CODE).not.toContain('deviceName');
     });
 });
