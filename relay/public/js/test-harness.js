@@ -15,6 +15,7 @@
 
     var STORAGE_KEY = 'couchbeam-test-results-v1';
     var EXPORT_SCHEMA = 'couchbeam-test-report/1.0';
+    var LINK_STORAGE_KEY = 'couchbeam-test-results-v1-links';
 
     // Result fields, exactly as the harness spec requires. Optional free-text
     // fields stay optional. This file never handles network addresses, TV
@@ -110,6 +111,114 @@
         return rec && (rec.sourceOpen !== 'not-tested' || rec.parseResult !== 'not-tested' || rec.rokuResult !== 'not-tested');
     }
 
+    // --- Tester-supplied "real link to test" --------------------------------
+    //
+    // Every card action (Open title, Send to Couchbeam, Copy link, Test parse)
+    // runs against the link the tester pasted into that card's input — never
+    // against the parser fixture. Fixtures stay visible as labeled technical
+    // reference with an explicit "Use fixture" opt-in.
+    //
+    // Typed links are session-only (kept in memory): they are NOT written to
+    // storage unless the tester explicitly taps "Save link on this device" on
+    // that card. Saved links live under LINK_STORAGE_KEY, in the same
+    // localStorage family as results. Nothing is ever uploaded anywhere.
+
+    // Page-session typed links. Never persisted unless explicitly saved.
+    var sessionLinks = {};
+
+    function setSessionLink(serviceId, url) {
+        if (url) { sessionLinks[serviceId] = String(url); }
+        else { delete sessionLinks[serviceId]; }
+    }
+
+    function clearSessionLinks() { sessionLinks = {}; }
+
+    function hostMatchesSuffix(hostname, domain) {
+        hostname = String(hostname).toLowerCase();
+        domain = String(domain).toLowerCase();
+        return hostname === domain || hostname.slice(-domain.length - 1) === '.' + domain;
+    }
+
+    // Pure validator: HTTPS only, and the host must match one of the
+    // service's registry domains (exact-or-suffix, so lookalikes like
+    // netflix.com.evil.com are rejected).
+    function validateTestUrl(domains, urlString) {
+        var raw = String(urlString == null ? '' : urlString).trim();
+        if (!raw) return { ok: false, error: 'paste a link first' };
+        var parsed;
+        try { parsed = new URL(raw); }
+        catch (e) { return { ok: false, error: 'that is not a valid URL' }; }
+        if (parsed.protocol !== 'https:') {
+            return { ok: false, error: 'link must use https' };
+        }
+        var host = parsed.hostname.toLowerCase();
+        var list = domains || [];
+        for (var i = 0; i < list.length; i++) {
+            if (hostMatchesSuffix(host, list[i])) return { ok: true, url: parsed.href };
+        }
+        return { ok: false, error: 'host "' + host + '" does not match this service' };
+    }
+
+    function shareHref(testUrl) {
+        return '/share?url=' + encodeURIComponent(testUrl);
+    }
+
+    function loadCardLinks() {
+        var store = storage();
+        if (!store) return {};
+        try {
+            var raw = store.getItem(LINK_STORAGE_KEY);
+            if (!raw) return {};
+            var parsed = JSON.parse(raw);
+            return (parsed && typeof parsed === 'object') ? parsed : {};
+        } catch (e) {
+            return {};
+        }
+    }
+
+    // Explicit per-card save. Validates first; never called implicitly.
+    function saveCardLink(serviceId, urlString, domains) {
+        var v = validateTestUrl(domains, urlString);
+        if (!v.ok) return v;
+        var store = storage();
+        if (!store) return { ok: false, error: 'storage is unavailable on this device' };
+        try {
+            var links = loadCardLinks();
+            links[serviceId] = v.url;
+            store.setItem(LINK_STORAGE_KEY, JSON.stringify(links));
+        } catch (e) {
+            return { ok: false, error: 'storage is unavailable on this device' };
+        }
+        delete sessionLinks[serviceId];
+        return { ok: true, url: v.url };
+    }
+
+    function clearCardLinks() {
+        var store = storage();
+        if (store) { try { store.removeItem(LINK_STORAGE_KEY); } catch (e) { /* ignore */ } }
+        return {};
+    }
+
+    // Resolution order: typed this session → saved on this device →
+    // maintainer-verified prefill → empty. The parser fixture is NEVER a
+    // default: cards without a verified current link start with an empty
+    // input and a paste affordance.
+    function resolveLink(serviceId, card, savedLinks) {
+        if (Object.prototype.hasOwnProperty.call(sessionLinks, serviceId)) {
+            return sessionLinks[serviceId];
+        }
+        if (savedLinks && savedLinks[serviceId]) return savedLinks[serviceId];
+        if (card && card.liveUrl) return card.liveUrl;
+        return '';
+    }
+
+    function linkSource(serviceId, card, savedLinks) {
+        if (Object.prototype.hasOwnProperty.call(sessionLinks, serviceId)) return 'typed';
+        if (savedLinks && savedLinks[serviceId]) return 'saved';
+        if (card && card.liveUrl) return 'verified';
+        return 'none';
+    }
+
     function buildReport(results, serviceMeta) {
         var list = serviceMeta || [];
         var rows = [];
@@ -194,11 +303,19 @@
         });
     }
 
+    // serviceId -> registry domains and harness card, refreshed on each render
+    // so the delegated event handlers can validate the card's input.
+    var CARD_DOMAINS = {};
+    var CARD_DATA = {};
+
     function renderCards(filter) {
         var host = document.getElementById('cards');
         if (!host) return;
         var results = loadResults();
+        var savedLinks = loadCardLinks();
         var metas = serviceMeta();
+        CARD_DOMAINS = {};
+        CARD_DATA = {};
         var html = '';
         var missing = [];
         for (var i = 0; i < metas.length; i++) {
@@ -206,8 +323,21 @@
             var c = metas[i].card;
             if (!c) { missing.push(s.id); continue; }
             if (filter && filter !== 'all' && c.state !== filter) continue;
+            CARD_DOMAINS[s.id] = s.domains || [];
+            CARD_DATA[s.id] = c;
             var rec = results[s.id] || blankRecord(s.id);
             var tested = isTested(rec) ? ' <span class="tested">● tested</span>' : '';
+            var linkValue = resolveLink(s.id, c, savedLinks);
+            var source = linkSource(s.id, c, savedLinks);
+            var check = validateTestUrl(s.domains || [], linkValue);
+            var dis = check.ok ? '' : ' disabled';
+            var badge = '';
+            if (source === 'verified') {
+                badge = '<span class="badge badge-verified">Verified current ' + esc(c.liveUrlVerified || '') + '</span>';
+            } else if (source === 'saved') {
+                badge = '<span class="badge badge-saved">Saved on this device</span>';
+            }
+            var errHtml = (!check.ok && String(linkValue).trim()) ? esc(check.error) : '';
             html += '<article class="card" data-service="' + esc(s.id) + '" data-state="' + esc(c.state) + '">'
                 + '<div class="card-head"><h3>' + esc(s.name) + '</h3>' + tested + '</div>'
                 + '<div class="appid">Roku app ID <code>' + esc(s.appId) + '</code></div>'
@@ -218,15 +348,27 @@
                 + '<dt>Parser extracts</dt><dd>' + esc(c.extracts) + '</dd>'
                 + '<dt>Web test URL</dt><dd class="needs-link">needs live link — <a href="' + esc(c.homeUrl) + '" target="_blank" rel="noopener">open ' + esc(s.name) + ' home</a>'
                 + (c.searchUrl ? ' · <a href="' + esc(c.searchUrl) + '" target="_blank" rel="noopener">search</a>' : '')
-                + '</dd>'
-                + '<dt>Parser fixture</dt><dd><code class="fixture">' + esc(c.fixtureUrl) + '</code> <span class="muted">(unverified — proves the parser handles the format, not that the page is current)</span></dd>'
+                + ', find a real title, and paste its link below.</dd>'
+                + '<dt>Parser fixture (unverified)</dt><dd><code class="fixture">' + esc(c.fixtureUrl) + '</code> '
+                + '<button class="btn small ghost" data-use-fixture="' + esc(s.id) + '" type="button">Use fixture</button>'
+                + '<br><span class="muted">Proves the parser handles the format — not that the page is current. Nothing is sent until you put a link in the box below.</span></dd>'
                 + '</dl>'
                 + (c.note ? '<p class="note">' + esc(c.note) + '</p>' : '')
+                + '<div class="linkbox">'
+                + '<label class="linklabel" for="link-' + esc(s.id) + '">Real link to test</label>'
+                + '<input type="url" inputmode="url" id="link-' + esc(s.id) + '" data-testlink="' + esc(s.id) + '" value="' + esc(linkValue) + '" placeholder="Paste a real ' + esc(s.name) + ' title link…" autocomplete="off" spellcheck="false">'
+                + '<div class="linkmeta">' + badge + '<span class="link-error" id="linkerr-' + esc(s.id) + '"' + (errHtml ? '' : ' hidden') + '>' + errHtml + '</span></div>'
                 + '<div class="actions">'
-                + '<a class="btn small" href="' + esc(c.homeUrl) + '" target="_blank" rel="noopener">Open source link</a>'
-                + '<a class="btn small" href="/share?url=' + encodeURIComponent(c.fixtureUrl) + '">Send to Couchbeam</a>'
-                + '<button class="btn small ghost" data-copy="' + esc(c.fixtureUrl) + '" type="button">Copy link</button>'
-                + '<button class="btn small ghost" data-parse="' + esc(s.id) + '" type="button">Test parse</button>'
+                + '<a class="btn small ghost" href="' + esc(c.homeUrl) + '" target="_blank" rel="noopener">Open service</a>'
+                + '<button class="btn small" data-open-title="' + esc(s.id) + '" type="button"' + dis + '>Open title</button>'
+                + '<button class="btn small primary" data-send="' + esc(s.id) + '" type="button"' + dis + '>Send to Couchbeam</button>'
+                + '<button class="btn small ghost" data-copy-link="' + esc(s.id) + '" type="button"' + dis + '>Copy link</button>'
+                + '<button class="btn small ghost" data-parse="' + esc(s.id) + '" type="button"' + dis + '>Test parse</button>'
+                + '</div>'
+                + '<div class="actions">'
+                + '<button class="btn small ghost" data-save-link="' + esc(s.id) + '" type="button"' + dis + '>Save link on this device</button>'
+                + '<span class="saved" id="linksaved-' + esc(s.id) + '" hidden>Saved ✓</span>'
+                + '</div>'
                 + '</div>'
                 + '<div class="parse-out" id="parse-' + esc(s.id) + '" hidden></div>'
                 + renderResultForm(s, c, rec)
@@ -271,37 +413,75 @@
         el.textContent = tested + ' of ' + metas.length + ' services have a recorded result';
     }
 
+    // Reads the card's "Real link to test" input; updates the mismatch
+    // error and enables/disables the actions without a full re-render
+    // (so typing never loses focus).
+    function refreshLinkUi(serviceId) {
+        var input = document.querySelector('[data-testlink="' + serviceId + '"]');
+        if (!input) return;
+        var domains = CARD_DOMAINS[serviceId] || [];
+        var check = validateTestUrl(domains, input.value);
+        var err = document.getElementById('linkerr-' + serviceId);
+        if (err) {
+            if (!check.ok && String(input.value).trim()) {
+                err.textContent = check.error;
+                err.hidden = false;
+            } else {
+                err.hidden = true;
+            }
+        }
+        var card = input.closest('article');
+        if (card) {
+            var btns = card.querySelectorAll('[data-open-title],[data-send],[data-copy-link],[data-parse],[data-save-link]');
+            for (var i = 0; i < btns.length; i++) btns[i].disabled = !check.ok;
+        }
+    }
+
+    function currentLinkInputValue(serviceId) {
+        var input = document.querySelector('[data-testlink="' + serviceId + '"]');
+        return input ? input.value : '';
+    }
+
+    // The validated tester-supplied URL for this card, or null. Actions must
+    // use this — never the parser fixture.
+    function currentLinkValue(serviceId) {
+        var v = validateTestUrl(CARD_DOMAINS[serviceId] || [], currentLinkInputValue(serviceId));
+        return v.ok ? v.url : null;
+    }
+
     function runParsePreview(serviceId) {
         var out = document.getElementById('parse-' + serviceId);
-        var metas = serviceMeta();
-        var meta = null;
-        for (var i = 0; i < metas.length; i++) {
-            if (metas[i].registry.id === serviceId) { meta = metas[i]; break; }
-        }
-        if (!out || !meta) return;
+        var input = document.querySelector('[data-testlink="' + serviceId + '"]');
+        var domains = CARD_DOMAINS[serviceId] || [];
+        if (!out || !input) return;
         out.hidden = false;
+        var check = validateTestUrl(domains, input.value);
+        if (!check.ok) {
+            out.innerHTML = '<span class="warn">' + esc(check.error) + ' — paste a real link above first.</span>';
+            return;
+        }
         try {
             var reg = window.QuickbeamRegistry;
-            var url = new URL(meta.card.fixtureUrl);
+            var url = new URL(check.url);
             var svc = reg.findService(url);
             if (!svc || svc.id !== serviceId) {
-                out.innerHTML = '<span class="warn">Fixture URL no longer matches this service in the registry.</span>';
+                out.innerHTML = '<span class="warn">Test link no longer matches this service in the registry.</span>';
                 return;
             }
             var parsed;
             try {
                 parsed = svc.parse(url);
             } catch (e) {
-                out.innerHTML = '<span class="warn">Parser needs a Node-only API in this browser (' + esc(e.name) + '). Fixture still valid for server-side parsing.</span>';
+                out.innerHTML = '<span class="warn">Parser needs a Node-only API in this browser (' + esc(e.name) + '). Link still valid for server-side parsing.</span>';
                 return;
             }
             if (!parsed) {
-                out.innerHTML = '<span class="warn">No match — parser returned null for the fixture URL.</span>';
+                out.innerHTML = '<span class="warn">No match — parser returned null for the test link.</span>';
             } else {
                 out.innerHTML = 'Parser extracts <code>contentId=' + esc(parsed.contentId) + '</code> <code>mediaType=' + esc(parsed.mediaType) + '</code>';
             }
         } catch (e) {
-            out.innerHTML = '<span class="warn">Could not parse fixture URL.</span>';
+            out.innerHTML = '<span class="warn">Could not parse test link.</span>';
         }
     }
 
@@ -341,11 +521,47 @@
     function init() {
         if (typeof document === 'undefined') return;
         renderCards('all');
+        document.addEventListener('input', function (ev) {
+            var t = ev.target;
+            if (t && t.dataset && t.dataset.testlink) {
+                // Session-only: typed links are never persisted implicitly.
+                setSessionLink(t.dataset.testlink, t.value);
+                refreshLinkUi(t.dataset.testlink);
+            }
+        });
         document.addEventListener('click', function (ev) {
             var t = ev.target;
             if (t && t.dataset) {
-                if (t.dataset.copy) {
-                    copyText(t.dataset.copy, function (ok) { t.textContent = ok ? 'Copied ✓' : 'Copy failed'; });
+                if (t.dataset.openTitle) {
+                    var u1 = currentLinkValue(t.dataset.openTitle);
+                    if (u1) window.open(u1, '_blank', 'noopener');
+                } else if (t.dataset.send) {
+                    var u2 = currentLinkValue(t.dataset.send);
+                    if (u2) window.location.href = shareHref(u2);
+                } else if (t.dataset.copyLink) {
+                    var u3 = currentLinkValue(t.dataset.copyLink);
+                    if (u3) copyText(u3, function (ok) { t.textContent = ok ? 'Copied ✓' : 'Copy failed'; });
+                } else if (t.dataset.useFixture) {
+                    var fid = t.dataset.useFixture;
+                    var fcard = CARD_DATA[fid];
+                    var finput = document.querySelector('[data-testlink="' + fid + '"]');
+                    if (fcard && finput) {
+                        // Explicit opt-in: the fixture becomes the tester's
+                        // session link for this card.
+                        finput.value = fcard.fixtureUrl;
+                        setSessionLink(fid, fcard.fixtureUrl);
+                        refreshLinkUi(fid);
+                    }
+                } else if (t.dataset.saveLink) {
+                    var sid = t.dataset.saveLink;
+                    var res = saveCardLink(sid, currentLinkInputValue(sid), CARD_DOMAINS[sid] || []);
+                    if (res.ok) {
+                        renderCards(currentFilter());
+                        var savedEl = document.getElementById('linksaved-' + sid);
+                        if (savedEl) { savedEl.hidden = false; setTimeout(function () { savedEl.hidden = true; }, 2000); }
+                    } else {
+                        alert('Cannot save: ' + res.error);
+                    }
                 } else if (t.dataset.parse) {
                     runParsePreview(t.dataset.parse);
                 } else if (t.dataset.save) {
@@ -396,6 +612,7 @@
     var api = {
         STORAGE_KEY: STORAGE_KEY,
         EXPORT_SCHEMA: EXPORT_SCHEMA,
+        LINK_STORAGE_KEY: LINK_STORAGE_KEY,
         RECORD_FIELDS: RECORD_FIELDS,
         RESULT_CHOICES: RESULT_CHOICES,
         blankRecord: blankRecord,
@@ -405,6 +622,15 @@
         resetResults: resetResults,
         validateRecord: validateRecord,
         isTested: isTested,
+        validateTestUrl: validateTestUrl,
+        shareHref: shareHref,
+        setSessionLink: setSessionLink,
+        clearSessionLinks: clearSessionLinks,
+        loadCardLinks: loadCardLinks,
+        saveCardLink: saveCardLink,
+        clearCardLinks: clearCardLinks,
+        resolveLink: resolveLink,
+        linkSource: linkSource,
         buildReport: buildReport,
         toCSV: toCSV,
         toTextReport: toTextReport,

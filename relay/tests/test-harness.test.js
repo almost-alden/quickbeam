@@ -232,6 +232,182 @@ describe('export schema', () => {
     });
 });
 
+describe('tester-supplied link drives every action', () => {
+    const netflixDomains = ['netflix.com'];
+
+    beforeEach(() => { H.clearSessionLinks(); });
+
+    test('shareHref builds /share?url= from the supplied URL, encoded', () => {
+        expect(H.shareHref('https://www.netflix.com/watch/81234567'))
+            .toBe('/share?url=' + encodeURIComponent('https://www.netflix.com/watch/81234567'));
+    });
+
+    test('actions resolve to the tester-supplied URL, never the fixture', () => {
+        const card = DATA.cardById('netflix');
+        const typed = 'https://www.netflix.com/watch/99999999';
+        H.setSessionLink('netflix', typed);
+        expect(H.resolveLink('netflix', card, {})).toBe(typed);
+        expect(H.resolveLink('netflix', card, {})).not.toBe(card.fixtureUrl);
+        expect(H.shareHref(H.resolveLink('netflix', card, {}))).toContain(encodeURIComponent(typed));
+    });
+
+    test('resolveLink priority: typed session > saved > verified prefill > empty', () => {
+        const card = DATA.cardById('plex'); // has liveUrl
+        expect(H.resolveLink('plex', card, {})).toBe(card.liveUrl);
+        expect(H.resolveLink('plex', card, { plex: 'https://watch.plex.tv/movie/saved-one' }))
+            .toBe('https://watch.plex.tv/movie/saved-one');
+        H.setSessionLink('plex', 'https://watch.plex.tv/movie/typed-one');
+        expect(H.resolveLink('plex', card, { plex: 'https://watch.plex.tv/movie/saved-one' }))
+            .toBe('https://watch.plex.tv/movie/typed-one');
+    });
+
+    test('linkSource reports where the active link came from', () => {
+        const plex = DATA.cardById('plex');
+        const netflix = DATA.cardById('netflix');
+        expect(H.linkSource('plex', plex, {})).toBe('verified');
+        expect(H.linkSource('netflix', netflix, {})).toBe('none');
+        expect(H.linkSource('netflix', netflix, { netflix: 'https://www.netflix.com/watch/1' })).toBe('saved');
+        H.setSessionLink('netflix', 'https://www.netflix.com/watch/2');
+        expect(H.linkSource('netflix', netflix, {})).toBe('typed');
+    });
+
+    test('validateTestUrl accepts the service host and its subdomains', () => {
+        expect(H.validateTestUrl(netflixDomains, 'https://www.netflix.com/watch/81234567'))
+            .toEqual({ ok: true, url: 'https://www.netflix.com/watch/81234567' });
+        expect(H.validateTestUrl(netflixDomains, 'https://netflix.com/title/81234567').ok).toBe(true);
+    });
+
+    test('host mismatch is rejected with a clear error', () => {
+        const r = H.validateTestUrl(netflixDomains, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+        expect(r.ok).toBe(false);
+        expect(r.error).toMatch(/does not match this service/);
+        expect(r.error).toContain('www.youtube.com');
+    });
+
+    test('lookalike suffix hosts are rejected', () => {
+        expect(H.validateTestUrl(netflixDomains, 'https://netflix.com.evil.com/watch/1').ok).toBe(false);
+        expect(H.validateTestUrl(netflixDomains, 'https://evilnetflix.com/watch/1').ok).toBe(false);
+    });
+
+    test('non-https, garbage, and empty inputs are rejected', () => {
+        expect(H.validateTestUrl(netflixDomains, 'http://www.netflix.com/watch/1').ok).toBe(false);
+        expect(H.validateTestUrl(netflixDomains, 'http://www.netflix.com/watch/1').error).toMatch(/https/);
+        expect(H.validateTestUrl(netflixDomains, 'not a url').ok).toBe(false);
+        expect(H.validateTestUrl(netflixDomains, '').ok).toBe(false);
+        expect(H.validateTestUrl(netflixDomains, '   ').ok).toBe(false);
+    });
+});
+
+describe('stale fixtures are never sent by default', () => {
+    beforeEach(() => { H.clearSessionLinks(); });
+
+    test('resolveLink never defaults to the parser fixture', () => {
+        for (const c of DATA.CARDS) {
+            const resolved = H.resolveLink(c.id, c, {});
+            if (c.liveUrl) {
+                // Verified prefill (apple-tv-plus and plex were verified at
+                // their fixture URL) — a deliberate default, not a stale one.
+                expect(resolved).toBe(c.liveUrl);
+            } else {
+                expect(resolved).toBe('');
+                expect(resolved).not.toBe(c.fixtureUrl);
+            }
+        }
+    });
+
+    test('cards without a verified current link start with an empty input', () => {
+        const without = DATA.CARDS.filter((c) => !c.liveUrl);
+        expect(without.length).toBe(21);
+        for (const c of without) {
+            expect(H.resolveLink(c.id, c, {})).toBe('');
+            expect(H.linkSource(c.id, c, {})).toBe('none');
+        }
+    });
+
+    test('exactly the verified cards carry a prefill, with https URLs on registry domains', () => {
+        const withLive = DATA.CARDS.filter((c) => c.liveUrl);
+        expect(withLive.map((c) => c.id).sort()).toEqual(['apple-tv-plus', 'max', 'plex']);
+        const domainsById = {};
+        for (const s of SERVICES) domainsById[s.id] = s.domains;
+        for (const c of withLive) {
+            expect(c.liveUrl).toMatch(/^https:\/\//);
+            expect(typeof c.liveUrlVerified).toBe('string');
+            expect(c.liveUrlVerified).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+            const v = H.validateTestUrl(domainsById[c.id], c.liveUrl);
+            expect(v.ok).toBe(true);
+        }
+    });
+
+    test('rendered actions reference the input-driven handlers, not fixture URLs', () => {
+        // The old build hard-coded the fixture into Send/Copy. The new build
+        // must not embed any fixture URL in an action target.
+        for (const c of DATA.CARDS) {
+            expect(HARNESS_SRC).not.toContain('/share?url=' + encodeURIComponent(c.fixtureUrl));
+        }
+        expect(HARNESS_SRC).toContain('data-send');
+        expect(HARNESS_SRC).toContain('data-open-title');
+        expect(HARNESS_SRC).toContain('data-testlink');
+        expect(HARNESS_SRC).toContain('data-use-fixture');
+        expect(HARNESS_SRC).toContain('Open service');
+        expect(HARNESS_SRC).not.toContain('Open source link');
+    });
+});
+
+describe('typed links are session-only unless explicitly saved', () => {
+    function mockStorage() {
+        const mem = {};
+        return {
+            getItem: (k) => (k in mem ? mem[k] : null),
+            setItem: (k, v) => { mem[k] = String(v); },
+            removeItem: (k) => { delete mem[k]; },
+            _mem: mem
+        };
+    }
+
+    let real;
+    beforeEach(() => {
+        H.clearSessionLinks();
+        real = global.localStorage;
+        global.localStorage = mockStorage();
+    });
+    afterEach(() => {
+        if (real === undefined) delete global.localStorage;
+        else global.localStorage = real;
+    });
+
+    test('typing a link does not write to storage', () => {
+        H.setSessionLink('netflix', 'https://www.netflix.com/watch/81234567');
+        expect(global.localStorage._mem[H.LINK_STORAGE_KEY]).toBeUndefined();
+        expect(H.loadCardLinks()).toEqual({});
+    });
+
+    test('explicit save persists to the links key; invalid links are refused', () => {
+        const bad = H.saveCardLink('netflix', 'https://www.youtube.com/watch?v=x', ['netflix.com']);
+        expect(bad.ok).toBe(false);
+        expect(H.loadCardLinks()).toEqual({});
+        const good = H.saveCardLink('netflix', 'https://www.netflix.com/watch/81234567', ['netflix.com']);
+        expect(good.ok).toBe(true);
+        expect(H.loadCardLinks()).toEqual({ netflix: 'https://www.netflix.com/watch/81234567' });
+    });
+
+    test('saved links live in the same localStorage family, separate key', () => {
+        expect(H.LINK_STORAGE_KEY).toBe('couchbeam-test-results-v1-links');
+        H.saveCardLink('plex', 'https://watch.plex.tv/movie/borderline', ['plex.tv']);
+        const raw = global.localStorage._mem[H.LINK_STORAGE_KEY];
+        expect(JSON.parse(raw)).toEqual({ plex: 'https://watch.plex.tv/movie/borderline' });
+        // Result records are untouched by link saves.
+        expect(global.localStorage._mem[H.STORAGE_KEY]).toBeUndefined();
+    });
+
+    test('clearCardLinks removes only the links key', () => {
+        H.saveCardLink('plex', 'https://watch.plex.tv/movie/borderline', ['plex.tv']);
+        H.setRecord('plex', { service: 'plex', sourceOpen: 'opened-app', parseResult: 'matched', rokuResult: 'not-attempted' });
+        H.clearCardLinks();
+        expect(H.loadCardLinks()).toEqual({});
+        expect(H.loadResults().plex.sourceOpen).toBe('opened-app');
+    });
+});
+
 describe('page wiring', () => {
     test('test.html references the registry client, harness data, and harness JS', () => {
         expect(HARNESS_HTML).toContain('<script src="/js/registry-client.js"></script>');

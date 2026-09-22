@@ -19,6 +19,13 @@
 // NOT prove the page is current or that the Roku app deep-links. Every card
 // therefore shows "needs live link" and offers the official home/search
 // fallback; the fixture URL is shown labeled as a parser fixture.
+//
+// "Real link to test" prefill rule: `liveUrl` is set ONLY for cards whose URL
+// was fetched by a maintainer and returned HTTP 200 on `liveUrlVerified`,
+// with the final host matching the card's registry domains. All other cards
+// start with an EMPTY input and a paste affordance. Prefilled links are
+// defaults, not claims that the Roku app deep-links — the state label still
+// governs what can actually be tested.
 
 (function () {
     'use strict';
@@ -99,7 +106,9 @@
             extracts: 'UUID from /movie | /show/<uuid> → movie | series',
             homeUrl: 'https://www.max.com',
             fixtureUrl: 'https://play.max.com/movie/a6a192ce-9585-4680-957a-07a62cea0539',
-            note: 'Parser fixture — not verified current. Share links may come from play.max.com or max.com.'
+            liveUrl: 'https://www.hbomax.com/movie/a6a192ce-9585-4680-957a-07a62cea0539',
+            liveUrlVerified: '2026-09-22',
+            note: 'Parser fixture — not verified current. Share links may come from play.max.com or max.com. Prefilled link is the verified-current hbomax.com redirect target.'
         },
         {
             id: 'peacock',
@@ -126,6 +135,8 @@
             extracts: 'Title key (umc.cmc.*) from /show | /movie/… → series | movie — but the Roku app ignores ECP content params',
             homeUrl: 'https://tv.apple.com',
             fixtureUrl: 'https://tv.apple.com/us/show/severance/umc.cmc.1srk2goyh2q2zdxcx605w8vtx',
+            liveUrl: 'https://tv.apple.com/us/show/severance/umc.cmc.1srk2goyh2q2zdxcx605w8vtx',
+            liveUrlVerified: '2026-09-22',
             note: 'The Roku Apple TV app ignores ECP deep-link params. Couchbeam can launch the app; it cannot deep-link to a title. Validate app-launch only.'
         },
         {
@@ -190,6 +201,8 @@
             extracts: 'Slug from watch.plex.tv /movie | /show/<slug> → movie | series',
             homeUrl: 'https://watch.plex.tv',
             fixtureUrl: 'https://watch.plex.tv/movie/borderline',
+            liveUrl: 'https://watch.plex.tv/movie/borderline',
+            liveUrlVerified: '2026-09-22',
             note: 'Only watch.plex.tv catalog links. Personal-server links (app.plex.tv) are server-specific and unsupported — validate catalog links only.'
         },
         {

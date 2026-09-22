@@ -132,6 +132,25 @@
         .btn.small { padding: 0.45rem 0.75rem; font-size: 0.84rem; }
         .btn.ghost { background: #fff; color: var(--ink); border: 1px solid var(--line); }
         .btn.primary { background: var(--blue); border-color: var(--blue); }
+        .btn[disabled] { opacity: 0.45; cursor: not-allowed; }
+        .linkbox {
+            background: #fbfaf7; border: 1px solid var(--line);
+            border-radius: 0.9rem; padding: 0.85rem 0.95rem; margin-top: 0.7rem;
+        }
+        .linklabel { display: block; font-weight: 700; font-size: 0.85rem; margin-bottom: 0.35rem; }
+        .linkbox input[type="url"] {
+            font: inherit; width: 100%; padding: 0.55rem 0.65rem;
+            border: 1px solid var(--line); border-radius: 0.6rem;
+            background: #fff; color: var(--ink);
+        }
+        .linkmeta { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin: 0.4rem 0 0.1rem; min-height: 1.2rem; }
+        .badge {
+            display: inline-block; font-size: 0.72rem; font-weight: 800;
+            border-radius: 999px; padding: 0.2rem 0.6rem;
+        }
+        .badge-verified { background: var(--green-bg); color: #166534; }
+        .badge-saved { background: #e0e7ff; color: #3730a3; }
+        .link-error { color: var(--red); font-size: 0.82rem; font-weight: 600; }
         .parse-out {
             font-size: 0.88rem; background: #eef1f6; border-radius: 0.7rem;
             padding: 0.6rem 0.8rem; margin-top: 0.6rem;
@@ -187,6 +206,7 @@
             <ul>
                 <li><b>Three honest states.</b> <i>Content deep link candidate</i> = the link format is a plausible deep-link input, still unproven. <i>App launch only</i> = the Roku app ignores deep-link params, so only launching the app can be tested. <i>Parser fixture / needs live validation</i> = we only know the parser handles the URL shape; the page itself may be stale.</li>
                 <li><b>“Needs live link.”</b> Web test URLs from our unit tests are parser fixtures, not proof the page is current. Use the service's official home/search link, find a real title, and share its link.</li>
+                <li><b>Your link drives every action.</b> Paste a real title link into each card's “Real link to test” box — Open title, Send to Couchbeam, Copy link, and Test parse all use the link you pasted, never the parser fixture. Links you type stay in this page session; tap “Save link on this device” to keep one between visits. Nothing is uploaded.</li>
                 <li><b>Results stay on this device.</b> Everything you record lives in this browser's local storage. Nothing is uploaded anywhere — you choose when and where to share via the export buttons below.</li>
                 <li><b>Experimental.</b> Launching the Roku from this page's HTTPS hosting is unverified on real hardware. Same home Wi-Fi required.</li>
             </ul>
