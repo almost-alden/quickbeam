@@ -58,7 +58,7 @@ describe('manifest serving (finding 5)', () => {
 
     test('every served page references the actual committed /manifest.json path', () => {
         const pages = ['index.html', 'share.html', 'send.html', 'magic.html',
-            'about.html', 'privacy.html', 'terms.html', 'support.html'];
+            'about.html', 'privacy.html', 'terms.html', 'support.html', 'test.html'];
         pages.forEach((p) => {
             const html = fs.readFileSync(path.join(PUBLIC_DIR, p), 'utf8');
             expect(html).toContain('<link rel="manifest" href="/manifest.json">');

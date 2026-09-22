@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Couchbeam — Streaming-service test harness</title>
+    <meta name="description" content="Manual test harness for Couchbeam's 24 supported streaming services. Beta testers only; results stay on this device.">
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/images/icon-192.png">
+    <meta name="theme-color" content="#f7f4ee">
+    <style>
+        /* Couchbeam messaging aesthetic — ink #101828, message blue #2e7cf6,
+           sent green #30d158, warm paper #f7f4ee. System fonts only. */
+        :root {
+            --ink: #101828;
+            --blue: #2e7cf6;
+            --green: #30d158;
+            --paper: #f7f4ee;
+            --muted: #8a94a6;
+            --card: #ffffff;
+            --line: #e8e2d4;
+            --amber: #b45309;
+            --amber-bg: #fef3c7;
+            --red: #b91c1c;
+            --red-bg: #fee2e2;
+            --green-bg: #dcfce7;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            background: var(--paper);
+            color: var(--ink);
+            line-height: 1.55;
+            -webkit-font-smoothing: antialiased;
+        }
+        .wrap { max-width: 720px; margin: 0 auto; padding: 0 1.25rem; }
+        header.top {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 1rem 0; gap: 0.75rem; flex-wrap: wrap;
+        }
+        .brand { font-weight: 800; font-size: 1.25rem; letter-spacing: -0.02em; }
+        .brand .bolt { color: var(--blue); }
+        .pill {
+            font-size: 0.75rem; font-weight: 700; color: var(--ink);
+            background: #fff; border: 1px solid var(--line); border-radius: 999px;
+            padding: 0.3rem 0.75rem;
+        }
+        h1 { font-size: 1.7rem; letter-spacing: -0.02em; margin: 0.5rem 0 0.25rem; }
+        .lede { color: #3d4756; margin-bottom: 1.25rem; }
+
+        .honesty {
+            background: #fffdf8; border: 1px dashed #d8d0bd; border-radius: 1rem;
+            padding: 1.1rem 1.25rem; margin-bottom: 1.5rem; font-size: 0.92rem;
+        }
+        .honesty h2 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 0.6rem; }
+        .honesty ul { padding-left: 1.2rem; color: #3d4756; }
+        .honesty li { margin-bottom: 0.35rem; }
+        .honesty b { color: var(--ink); }
+
+        .howto { display: grid; gap: 0.75rem; margin-bottom: 1.5rem; }
+        @media (min-width: 640px) { .howto { grid-template-columns: 1fr 1fr; } }
+        .howto .panel {
+            background: var(--card); border: 1px solid var(--line);
+            border-radius: 1rem; padding: 1rem 1.1rem; font-size: 0.92rem;
+        }
+        .howto h2 { font-size: 1rem; margin-bottom: 0.4rem; }
+        .howto p { color: #3d4756; margin-bottom: 0.4rem; }
+        .howto a { color: var(--blue); }
+
+        .toolbar {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1rem;
+        }
+        .filters { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+        .chip {
+            border: 1px solid var(--line); background: #fff; color: var(--ink);
+            border-radius: 999px; padding: 0.35rem 0.8rem; font-size: 0.82rem;
+            font-weight: 600; cursor: pointer;
+        }
+        .chip.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+        #progress { font-size: 0.85rem; color: var(--muted); font-weight: 600; }
+
+        .card {
+            background: var(--card); border: 1px solid var(--line);
+            border-radius: 1.1rem; padding: 1.1rem 1.2rem; margin-bottom: 0.9rem;
+            box-shadow: 0 6px 18px rgba(16, 24, 40, 0.05);
+        }
+        .card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; }
+        .card h3 { font-size: 1.1rem; letter-spacing: -0.01em; }
+        .tested { font-size: 0.78rem; font-weight: 700; color: #15803d; white-space: nowrap; }
+        .appid { font-size: 0.85rem; color: var(--muted); margin: 0.15rem 0 0.5rem; }
+        .appid code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            background: #eef1f6; border-radius: 0.35rem; padding: 0.1rem 0.4rem;
+            color: var(--ink); font-size: 0.82rem;
+        }
+        .state {
+            display: inline-block; font-size: 0.75rem; font-weight: 700;
+            border-radius: 999px; padding: 0.25rem 0.7rem; margin-bottom: 0.15rem;
+        }
+        .state-deep-link-candidate { background: var(--green-bg); color: #166534; }
+        .state-app-launch-only { background: #e0e7ff; color: #3730a3; }
+        .state-needs-validation { background: var(--amber-bg); color: var(--amber); }
+        .flag {
+            display: inline-block; font-size: 0.72rem; font-weight: 800;
+            background: var(--red-bg); color: var(--red); border-radius: 999px;
+            padding: 0.2rem 0.6rem; margin-left: 0.4rem; text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        dl.facts { margin: 0.7rem 0; font-size: 0.9rem; }
+        dl.facts dt { font-weight: 700; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-top: 0.55rem; }
+        dl.facts dd { color: #3d4756; }
+        dl.facts code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 0.8rem; background: #eef1f6; border-radius: 0.35rem;
+            padding: 0.1rem 0.35rem; word-break: break-all;
+        }
+        .needs-link a { color: var(--blue); }
+        .muted { color: var(--muted); font-size: 0.82rem; }
+        .note {
+            font-size: 0.88rem; color: #3d4756; background: #fffdf8;
+            border-left: 3px solid var(--blue); padding: 0.5rem 0.75rem;
+            border-radius: 0 0.5rem 0.5rem 0; margin: 0.6rem 0;
+        }
+        .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.7rem 0 0.2rem; }
+        .btn {
+            display: inline-block; text-decoration: none; font-weight: 700; cursor: pointer;
+            padding: 0.55rem 0.9rem; border-radius: 0.7rem; font-size: 0.88rem;
+            background: var(--ink); color: #fff; border: 1px solid var(--ink);
+        }
+        .btn.small { padding: 0.45rem 0.75rem; font-size: 0.84rem; }
+        .btn.ghost { background: #fff; color: var(--ink); border: 1px solid var(--line); }
+        .btn.primary { background: var(--blue); border-color: var(--blue); }
+        .btn[disabled] { opacity: 0.45; cursor: not-allowed; }
+        .linkbox {
+            background: #fbfaf7; border: 1px solid var(--line);
+            border-radius: 0.9rem; padding: 0.85rem 0.95rem; margin-top: 0.7rem;
+        }
+        .linklabel { display: block; font-weight: 700; font-size: 0.85rem; margin-bottom: 0.35rem; }
+        .linkbox input[type="url"] {
+            font: inherit; width: 100%; padding: 0.55rem 0.65rem;
+            border: 1px solid var(--line); border-radius: 0.6rem;
+            background: #fff; color: var(--ink);
+        }
+        .linkmeta { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin: 0.4rem 0 0.1rem; min-height: 1.2rem; }
+        .badge {
+            display: inline-block; font-size: 0.72rem; font-weight: 800;
+            border-radius: 999px; padding: 0.2rem 0.6rem;
+        }
+        .badge-verified { background: var(--green-bg); color: #166534; }
+        .badge-saved { background: #e0e7ff; color: #3730a3; }
+        .link-error { color: var(--red); font-size: 0.82rem; font-weight: 600; }
+        .parse-out {
+            font-size: 0.88rem; background: #eef1f6; border-radius: 0.7rem;
+            padding: 0.6rem 0.8rem; margin-top: 0.6rem;
+        }
+        .parse-out code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 0.8rem;
+        }
+        .warn { color: var(--amber); font-weight: 600; }
+
+        details.result { margin-top: 0.8rem; border-top: 1px solid var(--line); padding-top: 0.7rem; }
+        details.result summary { cursor: pointer; font-weight: 700; font-size: 0.9rem; color: var(--blue); }
+        details.result .form { display: grid; gap: 0.55rem; margin-top: 0.7rem; font-size: 0.88rem; }
+        details.result label { display: grid; gap: 0.25rem; font-weight: 600; color: #3d4756; }
+        details.result select, details.result input, details.result textarea {
+            font: inherit; padding: 0.5rem 0.6rem; border: 1px solid var(--line);
+            border-radius: 0.6rem; background: #fff; color: var(--ink); width: 100%;
+        }
+        details.result textarea { min-height: 3.2rem; resize: vertical; }
+        .saved { color: #15803d; font-weight: 700; font-size: 0.85rem; }
+
+        .session {
+            background: var(--ink); color: #fff; border-radius: 1.25rem;
+            padding: 1.5rem; margin: 1.5rem 0 2rem;
+        }
+        .session h2 { font-size: 1.2rem; margin-bottom: 0.5rem; }
+        .session p { color: #c3cbd8; font-size: 0.92rem; margin-bottom: 0.9rem; }
+        .session .btn-row { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+        .session .btn { background: var(--blue); border-color: var(--blue); }
+        .session .btn.ghost { background: transparent; border: 1px solid #3a4a63; color: #fff; }
+        .session .btn.danger { background: transparent; border: 1px solid #7f1d1d; color: #fca5a5; }
+
+        .error {
+            background: var(--red-bg); color: var(--red); font-weight: 700;
+            border-radius: 0.8rem; padding: 0.8rem 1rem; margin-bottom: 0.9rem;
+        }
+        footer { padding: 0.5rem 0 2.5rem; text-align: center; font-size: 0.82rem; color: var(--muted); }
+        footer a { color: var(--muted); margin: 0 0.5rem; }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <header class="top">
+            <div class="brand"><span class="bolt">⚡</span> Couchbeam</div>
+            <div class="pill">Test harness · beta testers only</div>
+        </header>
+
+        <h1>Streaming-service test harness</h1>
+        <p class="lede">Work through the 24 supported services, try real links, and record what actually happens on your phone and your Roku. Nothing here is verified until a human tests it.</p>
+
+        <section class="honesty" aria-label="How to read this page">
+            <h2>Read this first</h2>
+            <ul>
+                <li><b>Three honest states.</b> <i>Content deep link candidate</i> = the link format is a plausible deep-link input, still unproven. <i>App launch only</i> = the Roku app ignores deep-link params, so only launching the app can be tested. <i>Parser fixture / needs live validation</i> = we only know the parser handles the URL shape; the page itself may be stale.</li>
+                <li><b>“Needs live link.”</b> Web test URLs from our unit tests are parser fixtures, not proof the page is current. Use the service's official home/search link, find a real title, and share its link.</li>
+                <li><b>Your link drives every action.</b> Paste a real title link into each card's “Real link to test” box — Open title, Send to Couchbeam, Copy link, and Test parse all use the link you pasted, never the parser fixture. Links you type stay in this page session; tap “Save link on this device” to keep one between visits. Nothing is uploaded.</li>
+                <li><b>Results stay on this device.</b> Everything you record lives in this browser's local storage. Nothing is uploaded anywhere — you choose when and where to share via the export buttons below.</li>
+                <li><b>Experimental.</b> Launching the Roku from this page's HTTPS hosting is unverified on real hardware. Same home Wi-Fi required.</li>
+            </ul>
+        </section>
+
+        <section class="howto" aria-label="How to send a link while testing">
+            <div class="panel">
+                <h2>🤖 Android testers</h2>
+                <p>Install Couchbeam from your browser menu — it becomes a <b>share target</b>. In any app (YouTube, Chrome, messages), share the video → Couchbeam → the link opens at <code>/share?url=…</code> for preview.</p>
+            </div>
+            <div class="panel">
+                <h2>🍎 iPhone / iPad testers</h2>
+                <p>iOS won't put web apps in the share sheet. <b>Add Couchbeam to your Home Screen</b>, copy the video link, and paste it at <code>/share</code>. For a share-sheet shortcut, install the “Send to Couchbeam” Shortcut (recipe in <code>docs/ios-shortcut.md</code> in the repo).</p>
+            </div>
+        </section>
+
+        <div class="toolbar">
+            <div class="filters" role="group" aria-label="Filter by state">
+                <button class="chip on" data-filter="all" type="button">All 24</button>
+                <button class="chip" data-filter="deep-link-candidate" type="button">Deep-link candidates</button>
+                <button class="chip" data-filter="app-launch-only" type="button">App launch only</button>
+                <button class="chip" data-filter="needs-validation" type="button">Needs validation</button>
+            </div>
+            <div id="progress" aria-live="polite"></div>
+        </div>
+
+        <main id="cards" aria-live="polite">
+            <p class="muted">Loading the service matrix…</p>
+        </main>
+
+        <section class="session" aria-label="Session export">
+            <h2>Your test session</h2>
+            <p>Results are stored only in this browser. Copy the report or download it when you're ready to share — nothing leaves this device until you do.</p>
+            <div class="btn-row">
+                <button class="btn" id="copy-report" type="button">Copy session report</button>
+                <button class="btn ghost" id="dl-json" type="button">Download JSON</button>
+                <button class="btn ghost" id="dl-csv" type="button">Download CSV</button>
+                <button class="btn danger" id="reset-results" type="button">Reset all local results</button>
+            </div>
+        </section>
+
+        <footer>
+            <a href="/">Home</a> · <a href="/privacy.html">Privacy</a>
+            <p style="margin-top:0.5rem;">Couchbeam home test — results never leave this device unless you export them.</p>
+        </footer>
+    </div>
+
+    <script src="/js/registry-client.js"></script>
+    <script src="/js/test-harness-data.js"></script>
+    <script src="/js/test-harness.js"></script>
+</body>
+</html>
