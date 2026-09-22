@@ -9,10 +9,6 @@
 // client code. Security comes from firestore.rules, not from hiding this key.
 
 window.QuickbeamConfig = {
-    // Firebase project id, e.g. "couchbeam-hometest". PLACEHOLDER until created.
-    projectId: 'couchbeam-spark-PLACEHOLDER',
-
-    // Web API key from the Firebase console (Project settings > General).
-    // PLACEHOLDER until the project exists.
-    apiKey: 'FIREBASE_WEB_API_KEY_PLACEHOLDER'
+    projectId: 'quickbeam-prod',
+    apiKey: 'AIzaSyAfJTF2HGmHAHQHYtdyMtyQga7AZLRCJRg'
 };

@@ -60,7 +60,8 @@ service cloud.firestore {
         && request.resource.data.videoTitle is string
         && request.resource.data.videoTitle.size() <= 200
         && request.resource.data.originalUrl is string
-        && request.resource.data.originalUrl.matches('^https://[^\\s]{1,2048}$')
+        && request.resource.data.originalUrl.size() <= 2048
+        && request.resource.data.originalUrl.matches('^https://\\S+$')
         && request.resource.data.createdAt is timestamp
         && request.resource.data.expiresAt is timestamp
         && request.resource.data.expiresAt > request.resource.data.createdAt

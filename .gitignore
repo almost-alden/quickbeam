@@ -39,3 +39,7 @@ out/
 packaing-instructions.txt
 roku-mcp.txt
 
+# Firebase
+.firebase/
+
+
