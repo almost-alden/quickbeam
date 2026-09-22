@@ -9,7 +9,7 @@
     <meta name="theme-color" content="#8b5cf6">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="/images/icon-512.png">
+    <link rel="apple-touch-icon" href="/images/icon-512.jpg">
     
     <!-- Modern typography -->
     <!-- System font stacks only — no webfont imports, per project rule. -->
@@ -673,7 +673,7 @@
                 <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
             </button>
         </div>
-        <p>Send a video to a friend's Roku instantly.</p>
+        <p>Send a video link to a friend — they open it on their phone and pair their own Roku.</p>
         
         <label for="senderName">Your Name</label>
         <div class="input-group">
@@ -722,9 +722,8 @@
             
             <div class="add-contact-form" style="border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 1rem; margin-top: 0.5rem; text-align: left;">
                 <label style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.5rem; display: block; font-weight: 500;">Add New Contact</label>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem;">
+                <div style="margin-bottom: 0.5rem;">
                     <input type="text" id="newContactName" placeholder="Name (e.g. Mom)" style="padding: 0.6rem 0.8rem; font-size: 0.85rem; width: 100%; box-sizing: border-box;">
-                    <input type="text" id="newContactCode" placeholder="TV Code (6 digits)" style="padding: 0.6rem 0.8rem; font-size: 0.85rem; width: 100%; box-sizing: border-box;">
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem;">
                     <input type="text" id="newContactPhone" placeholder="Phone (SMS/WhatsApp)" style="padding: 0.6rem 0.8rem; font-size: 0.85rem; width: 100%; box-sizing: border-box;">
@@ -789,19 +788,19 @@
     <div id="tutorial-modal" class="modal-overlay">
         <div class="modal-content">
             <h2 class="modal-title">Welcome to Couchbeam! ⚡️</h2>
-            <p class="modal-desc">Couchbeam is a simple, lightweight utility that lets you instantly send and play videos on a friend's Roku TV—completely free, with no accounts or sign-ins needed.</p>
+            <p class="modal-desc">Couchbeam is a simple, lightweight utility that lets you send video links to a friend's phone — they open the link, pair their own Roku TV, and cast. Completely free, with no accounts or sign-ins needed.</p>
             
             <div class="step-item">
                 <div class="step-number">1</div>
-                <p class="step-text"><b>Get the Roku App</b>: Install and open the Couchbeam channel on the Roku TV. It will display a 6-digit pairing code on the screen.</p>
+                <p class="step-text"><b>Get them set up</b>: they open your magic link on their phone (on the same Wi-Fi as their Roku) and pair their TV once.</p>
             </div>
             <div class="step-item">
                 <div class="step-number">2</div>
-                <p class="step-text"><b>Add Contact & Pair</b>: Under "Quick Send", add your contact's name and their 6-digit TV pairing code. You can also save their phone or email for direct delivery.</p>
+                <p class="step-text"><b>Add Contact</b>: Under "Quick Send", add your contact's name, plus their phone or email for direct delivery.</p>
             </div>
             <div class="step-item">
                 <div class="step-number">3</div>
-                <p class="step-text"><b>Cast Instantly</b>: Paste a video URL, tap their contact card, and send it! Opening the link instantly launches the video on their TV.</p>
+                <p class="step-text"><b>Quick Send</b>: Paste a video URL, tap their contact card, and send it! They open the link on their phone and pair their own TV. Phone-to-Roku launching is experimental and unverified until tested on real hardware.</p>
             </div>
 
             <button class="modal-btn" onclick="closeModal()">Got it, let's cast!</button>
@@ -815,6 +814,12 @@
         <a href="/terms.html" style="color: var(--text-secondary); text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-secondary)'">Terms of Use</a>
     </div>
 
+    <script src="/js/registry-client.js"></script>
+    <script src="/js/share.js"></script>
+    <script src="/js/firebase-config.js"></script>
+    <script src="/js/firestore-rest.js"></script>
+    <script src="/js/qb.js"></script>
+    <script src="/js/send-contacts.js"></script>
     <script>
         // Load saved sender name on startup
         document.getElementById('senderName').value = localStorage.getItem('quickbeam_sender_name') || '';
@@ -981,26 +986,27 @@
         }
 
         // Contact Management Logic
+        // Model: { name, phone, email } — a plain address book. Contacts store
+        // no pairing links or TV bindings; the recipient pairs their own TV
+        // after opening the link. Pure logic lives in js/send-contacts.js
+        // (window.QuickbeamSendContacts) so Jest can test it; the functions
+        // below are thin DOM wrappers.
         function getContacts() {
-            try {
-                return JSON.parse(localStorage.getItem('quickbeam_contacts')) || [];
-            } catch (e) {
-                return [];
-            }
+            return window.QuickbeamSendContacts
+                ? window.QuickbeamSendContacts.getContacts()
+                : [];
         }
 
         function saveContactsList(contacts) {
-            localStorage.setItem('quickbeam_contacts', JSON.stringify(contacts));
+            if (window.QuickbeamSendContacts) window.QuickbeamSendContacts.saveContactsList(contacts);
         }
 
         function saveContact() {
             const nameInput = document.getElementById('newContactName');
-            const codeInput = document.getElementById('newContactCode');
             const phoneInput = document.getElementById('newContactPhone');
             const emailInput = document.getElementById('newContactEmail');
 
             const name = nameInput.value.trim();
-            const code = codeInput.value.trim().replace(/\s+/g, '');
             const phone = phoneInput.value.trim().replace(/\s+/g, '');
             const email = emailInput.value.trim();
 
@@ -1012,11 +1018,10 @@
                 return alert("A contact with this name already exists.");
             }
 
-            contacts.push({ name, code, phone, email });
+            contacts.push({ name, phone, email });
             saveContactsList(contacts);
 
             nameInput.value = '';
-            codeInput.value = '';
             phoneInput.value = '';
             emailInput.value = '';
             renderContacts();
@@ -1064,12 +1069,6 @@
                 badgesDiv.style.fontSize = '0.7rem';
                 badgesDiv.style.color = 'var(--text-secondary)';
 
-                if (contact.code) {
-                    const b = document.createElement('span');
-                    b.innerText = '📺';
-                    b.title = 'Pairing Code: ' + contact.code;
-                    badgesDiv.appendChild(b);
-                }
                 if (contact.phone) {
                     const b = document.createElement('span');
                     b.innerText = '📞';
@@ -1099,61 +1098,49 @@
             const url = document.getElementById('videoUrl').value.trim();
             const senderName = document.getElementById('senderName').value.trim();
             const videoTitle = document.getElementById('videoTitle').value.trim();
-            
+
             if (!url) return alert("Please paste a Video URL first.");
-            
+
             if (senderName) {
                 localStorage.setItem('quickbeam_sender_name', senderName);
             }
 
-            try {
-                const res = await fetch('/api/create', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url, senderName, pairingCode: contact.code, videoTitle })
-                });
-                
-                const data = await res.json();
-                if (data.relayUrl) {
-                    document.getElementById('result').style.display = 'block';
-                    document.getElementById('outputLink').innerText = data.relayUrl;
-                    
-                    // Copy link to clipboard in background
-                    try {
-                        await navigator.clipboard.writeText(data.relayUrl);
-                    } catch (err) {
-                        console.log('Clipboard write failed', err);
-                    }
+            // Static hosting has no /api/*: create the magic link through the
+            // data layer (Quickbeam.createMagicLink falls back to Firestore).
+            if (typeof window.Quickbeam === 'undefined' || typeof window.QuickbeamSendContacts === 'undefined') {
+                return alert("Couchbeam is still loading — try again in a moment.");
+            }
 
-                    // Direct messaging routing based on details
-                    if (contact.phone) {
-                        const smsBody = `${senderName || 'Your friend'} sent you a video link! Open this to cast it onto your TV: ${data.relayUrl}`;
-                        const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-                        const smsUrl = `sms:${contact.phone}${isiOS ? '&' : '?'}body=${encodeURIComponent(smsBody)}`;
-                        window.location.href = smsUrl;
-                    } else if (contact.email) {
-                        const emailSubject = 'Couchbeam Cast ⚡️';
-                        const emailBody = `${senderName || 'Your friend'} sent you a video link! Open this to cast it onto your TV: ${data.relayUrl}`;
-                        const mailUrl = `mailto:${contact.email}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
-                        window.location.href = mailUrl;
-                    } else if (navigator.share) {
-                        try {
-                            await navigator.share({
-                                title: 'Couchbeam Link ⚡️',
-                                text: `Hi ${contact.name}, ${senderName || 'Your friend'} sent you a video!`,
-                                url: data.relayUrl
-                            });
-                        } catch (err) {
-                            console.log('User dismissed share dialog', err);
-                        }
-                    } else {
-                        alert(`Magic Link generated and copied to clipboard!\nSend it to ${contact.name}:\n${data.relayUrl}`);
+            try {
+                const { magicUrl, route } = await window.QuickbeamSendContacts.prepareQuickSend(
+                    { qb: window.Quickbeam, clipboard: navigator.clipboard },
+                    { url, videoTitle, senderName, contact }
+                );
+
+                document.getElementById('result').style.display = 'block';
+                document.getElementById('outputLink').innerText = magicUrl;
+
+                // Direct messaging routing based on details (unchanged)
+                if (route.type === 'sms') {
+                    const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+                    window.location.href = `sms:${route.phone}${isiOS ? '&' : '?'}body=${encodeURIComponent(route.body)}`;
+                } else if (route.type === 'mailto') {
+                    window.location.href = `mailto:${route.email}?subject=${encodeURIComponent(route.subject)}&body=${encodeURIComponent(route.body)}`;
+                } else if (navigator.share) {
+                    try {
+                        await navigator.share({
+                            title: 'Couchbeam Link ⚡️',
+                            text: `Hi ${route.name}, ${senderName || 'Your friend'} sent you a video!`,
+                            url: magicUrl
+                        });
+                    } catch (err) {
+                        console.log('User dismissed share dialog', err);
                     }
                 } else {
-                    alert("Error: " + (data.error || "Unknown error"));
+                    alert(`Magic Link generated and copied to clipboard!\nSend it to ${route.name}:\n${magicUrl}`);
                 }
             } catch (e) {
-                alert("Failed to connect to Relay server.");
+                alert((e && e.message) || "Failed to create the magic link.");
             }
         }
 
