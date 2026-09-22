@@ -6,7 +6,7 @@ const ASSETS = [
   '/send.html',
   '/magic.html',
   '/images/icon-192.png',
-  '/images/icon-512.jpg',
+  '/images/icon-512.png',
   '/js/registry-client.js',
   '/js/share.js',
   '/js/qb.js',
