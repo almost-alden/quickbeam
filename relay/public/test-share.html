@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Couchbeam — Deep-link share test page</title>
+    <meta name="description" content="Beta-tester page: run ready-made or your own deep links through Couchbeam's real share flow. Nothing is uploaded.">
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/images/icon-192.png">
+    <meta name="theme-color" content="#f7f4ee">
+    <style>
+        /* Couchdrop warm visual direction: paper #f7f4ee, ink #101828,
+           message blue #2e7cf6, sent green #30d158, white cards, soft
+           borders. System fonts only — no webfont imports. */
+        :root {
+            --paper: #f7f4ee;
+            --ink: #101828;
+            --blue: #2e7cf6;
+            --green: #30d158;
+            --card: #ffffff;
+            --line: #e8e2d4;
+            --muted: #6b7484;
+            --body: #3d4756;
+            --amber: #b45309;
+            --amber-bg: #fef3c7;
+            --red: #b91c1c;
+            --red-bg: #fee2e2;
+            --green-bg: #dcfce7;
+            --blue-bg: #eef4ff;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            background: var(--paper);
+            color: var(--ink);
+            line-height: 1.55;
+            -webkit-font-smoothing: antialiased;
+        }
+        :focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+        .wrap { max-width: 720px; margin: 0 auto; padding: 0 1.25rem; }
+        header.top {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 1rem 0; gap: 0.75rem; flex-wrap: wrap;
+        }
+        .brand { font-weight: 800; font-size: 1.25rem; letter-spacing: -0.02em; }
+        .brand .bolt { color: var(--blue); }
+        .pill {
+            font-size: 0.75rem; font-weight: 700; color: var(--ink);
+            background: #fff; border: 1px solid var(--line); border-radius: 999px;
+            padding: 0.3rem 0.75rem;
+        }
+        h1 { font-size: 1.7rem; letter-spacing: -0.02em; margin: 0.5rem 0 0.25rem; }
+        h2 { font-size: 1.15rem; letter-spacing: -0.01em; margin: 1.75rem 0 0.75rem; }
+        .lede { color: var(--body); margin-bottom: 1.25rem; }
+        .lede a { color: var(--blue); }
+
+        .honesty {
+            background: #fffdf8; border: 1px dashed #d8d0bd; border-radius: 1rem;
+            padding: 1.1rem 1.25rem; margin-bottom: 1rem; font-size: 0.92rem;
+        }
+        .honesty h2 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 0.6rem; }
+        .honesty ul { padding-left: 1.2rem; color: var(--body); }
+        .honesty li { margin-bottom: 0.35rem; }
+        .honesty b { color: var(--ink); }
+
+        .card {
+            background: var(--card); border: 1px solid var(--line);
+            border-radius: 1.1rem; padding: 1.1rem 1.2rem; margin-bottom: 0.9rem;
+            box-shadow: 0 6px 18px rgba(16, 24, 40, 0.05);
+        }
+        .card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; }
+        .card h3 { font-size: 1.05rem; letter-spacing: -0.01em; }
+        .state {
+            display: inline-block; font-size: 0.75rem; font-weight: 700;
+            border-radius: 999px; padding: 0.25rem 0.7rem; white-space: nowrap;
+        }
+        .state-deep-link-candidate { background: var(--green-bg); color: #166534; }
+        .state-app-launch-only { background: #e0e7ff; color: #3730a3; }
+        .state-needs-validation { background: var(--amber-bg); color: var(--amber); }
+        .state-tester { background: var(--blue-bg); color: #1f5fc4; }
+        .honest-label {
+            display: inline-block; font-size: 0.75rem; font-weight: 600;
+            color: var(--muted); margin: 0.35rem 0 0.5rem;
+        }
+        .linkrow { display: flex; gap: 0.5rem; margin-bottom: 0.6rem; }
+        .linkrow input {
+            font: inherit; flex: 1; min-width: 0; padding: 0.55rem 0.65rem;
+            border: 1px solid var(--line); border-radius: 0.6rem;
+            background: #fbfaf7; color: var(--ink);
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 0.8rem;
+        }
+        .btn {
+            display: inline-block; text-decoration: none; font-weight: 700; cursor: pointer;
+            padding: 0.55rem 0.9rem; border-radius: 0.7rem; font-size: 0.88rem;
+            background: var(--ink); color: #fff; border: 1px solid var(--ink);
+            font-family: inherit;
+        }
+        .btn.primary { background: var(--blue); border-color: var(--blue); }
+        .btn.ghost { background: #fff; color: var(--ink); border: 1px solid var(--line); }
+        .btn.small { padding: 0.45rem 0.75rem; font-size: 0.84rem; }
+        .btn.danger-ghost { background: #fff; color: var(--red); border: 1px solid #f3c2c2; }
+        .btn[disabled] { opacity: 0.45; cursor: not-allowed; }
+        .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.6rem 0 0.2rem; }
+        .status {
+            font-size: 0.88rem; background: #fbfaf7; border: 1px solid var(--line);
+            border-radius: 0.7rem; padding: 0.6rem 0.8rem; margin-top: 0.6rem;
+            display: none; word-break: break-word;
+        }
+        .status.show { display: block; }
+        .status code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 0.8rem; background: #eef1f6; border-radius: 0.35rem;
+            padding: 0.1rem 0.35rem; word-break: break-all;
+        }
+        .status .ok { color: #166534; font-weight: 700; }
+        .status .err { color: var(--red); font-weight: 700; }
+        .status .row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem; align-items: center; }
+        .muted { color: var(--muted); font-size: 0.82rem; }
+        .note {
+            font-size: 0.88rem; color: var(--body); background: #fffdf8;
+            border-left: 3px solid var(--blue); padding: 0.5rem 0.75rem;
+            border-radius: 0 0.5rem 0.5rem 0; margin: 0.6rem 0;
+        }
+        .form { display: grid; gap: 0.6rem; }
+        .form label { display: grid; gap: 0.25rem; font-weight: 600; color: var(--body); font-size: 0.9rem; }
+        .form input, .form select {
+            font: inherit; font-weight: 400; padding: 0.55rem 0.65rem;
+            border: 1px solid var(--line); border-radius: 0.6rem;
+            background: #fff; color: var(--ink); width: 100%;
+        }
+        .empty { color: var(--muted); font-size: 0.9rem; padding: 0.5rem 0; }
+        footer { padding: 1.5rem 0 2.5rem; text-align: center; font-size: 0.82rem; color: var(--muted); }
+        footer a { color: var(--muted); margin: 0 0.5rem; }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <header class="top">
+            <div class="brand"><span class="bolt">⚡</span> Couchbeam</div>
+            <div class="pill">Test page · beta testers only</div>
+        </header>
+
+        <h1>Deep-link sharing test page</h1>
+        <p class="lede">Run ready-made or your own deep links through Couchbeam's real share flow — parse, create a magic link, copy it. Pairs with the <a href="/test">streaming-service test harness</a>. Everything here stays on this device except the magic-link docs Couchbeam itself creates.</p>
+
+        <section class="honesty" aria-label="How to read this page">
+            <h2>Read this first</h2>
+            <ul>
+                <li><b>Built-in links are examples.</b> Every built-in link is labeled <i>example/parser fixture — not verified on Roku</i>. They prove the parser handles the URL shape, not that the page is current or that the Roku app deep-links.</li>
+                <li><b>Your links stay on this device.</b> Links you add are stored only in this browser's local storage. Nothing is uploaded anywhere.</li>
+                <li><b>Couchbeam never sends texts.</b> “Test share” creates a shareable magic link (or opens your local share/composer) — it does not send anything on your behalf.</li>
+                <li><b>Experimental.</b> Launching the Roku from this page's HTTPS hosting is unverified on real hardware. Same home Wi-Fi required.</li>
+            </ul>
+        </section>
+
+        <h2>Built-in example links</h2>
+        <p class="muted" style="margin-bottom: 0.75rem;">One per supported service, drawn from the test-harness fixtures. Deep-link candidates first.</p>
+        <main id="builtin-list" aria-live="polite">
+            <p class="muted">Loading the link library…</p>
+        </main>
+
+        <h2>Your links</h2>
+        <div class="card">
+            <form class="form" id="custom-form">
+                <label>Service
+                    <select id="custom-service" required></select>
+                </label>
+                <label>Deep link URL
+                    <input type="url" id="custom-url" placeholder="https://…" required inputmode="url">
+                </label>
+                <label>Label (optional)
+                    <input type="text" id="custom-label" placeholder="e.g. the episode you want to test" maxlength="80">
+                </label>
+                <div>
+                    <button class="btn primary" type="submit">Add link</button>
+                </div>
+                <p class="muted">Stored only in this browser's local storage — never sent to any server.</p>
+            </form>
+        </div>
+        <div id="custom-list" aria-live="polite"></div>
+
+        <footer>
+            <a href="/">Home</a> · <a href="/test">Test harness</a> · <a href="/privacy.html">Privacy</a>
+            <p style="margin-top:0.5rem;">Couchbeam home test — your links never leave this device unless you share them.</p>
+        </footer>
+    </div>
+
+    <script src="/js/registry-client.js"></script>
+    <script src="/js/share.js"></script>
+    <script src="/js/test-harness-data.js"></script>
+    <script src="/js/firebase-config.js"></script>
+    <script src="/js/firestore-rest.js"></script>
+    <script src="/js/qb.js"></script>
+    <script>
+    (function () {
+        'use strict';
+
+        var CUSTOM_KEY = 'quickbeam_testshare_custom';
+        var HONESTY_LABEL = 'example/parser fixture — not verified on Roku';
+        var STATE_ORDER = { 'deep-link-candidate': 0, 'app-launch-only': 1, 'needs-validation': 2 };
+        var STATE_NAMES = {
+            'deep-link-candidate': 'Deep-link candidate',
+            'app-launch-only': 'App launch only',
+            'needs-validation': 'Parser fixture — needs validation'
+        };
+
+        function storage() {
+            try { if (typeof localStorage !== 'undefined') return localStorage; } catch (e) {}
+            return null;
+        }
+
+        function getCustom() {
+            var s = storage();
+            if (!s) return [];
+            try { return JSON.parse(s.getItem(CUSTOM_KEY)) || []; } catch (e) { return []; }
+        }
+
+        function saveCustom(list) {
+            var s = storage();
+            if (s) {
+                try { s.setItem(CUSTOM_KEY, JSON.stringify(list)); } catch (e) {}
+            }
+        }
+
+        function serviceName(id) {
+            var svc = window.QuickbeamRegistry && window.QuickbeamRegistry.SERVICES
+                ? window.QuickbeamRegistry.SERVICES.filter(function (x) { return x.id === id; })[0]
+                : null;
+            return svc ? svc.name : id;
+        }
+
+        function el(tag, cls, text) {
+            var n = document.createElement(tag);
+            if (cls) n.className = cls;
+            if (text !== undefined && text !== null) n.textContent = text;
+            return n;
+        }
+
+        function statusEl() {
+            return el('div', 'status');
+        }
+
+        function showStatus(box, html) {
+            box.innerHTML = html;
+            box.classList.add('show');
+        }
+
+        function esc(s) {
+            return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        async function copyText(text, btn) {
+            try {
+                await navigator.clipboard.writeText(text);
+                var orig = btn.textContent;
+                btn.textContent = 'Copied!';
+                setTimeout(function () { btn.textContent = orig; }, 2000);
+            } catch (e) {
+                alert('Copy failed: ' + e);
+            }
+        }
+
+        // One-tap share test: parse the URL with the real registry parser,
+        // then run it through the real magic-link flow (Quickbeam).
+        async function testShare(entry, box) {
+            showStatus(box, 'Parsing…');
+            if (!window.QuickbeamShare || !window.Quickbeam) {
+                showStatus(box, '<span class="err">Couchbeam is still loading — try again in a moment.</span>');
+                return;
+            }
+            var parsed;
+            try {
+                parsed = window.QuickbeamShare.parseSharedUrl(entry.url);
+            } catch (e) {
+                showStatus(box, '<span class="err">Parse failed: ' + esc((e && e.message) || e) + '</span>');
+                return;
+            }
+            if (parsed.error) {
+                showStatus(box, '<span class="err">Not shareable:</span> the parser returned ' +
+                    '<code>' + esc(parsed.error) + '</code> for this URL. ' +
+                    (entry.builtin ? 'The fixture may be stale — try a real link from the service.' : 'Check the URL and try again.'));
+                return;
+            }
+            showStatus(box,
+                '<span class="ok">Parsed:</span> ' + esc(parsed.serviceName || serviceName(entry.serviceId)) +
+                ' · app <code>' + esc(parsed.appId) + '</code>' +
+                ' · content <code>' + esc(parsed.contentId) + '</code>' +
+                ' · type <code>' + esc(parsed.mediaType) + '</code><br>Creating magic link…');
+            try {
+                var res = await window.Quickbeam.createMagicLink({ url: entry.url, videoTitle: entry.label || '' });
+                showStatus(box,
+                    '<span class="ok">Parsed:</span> ' + esc(parsed.serviceName || serviceName(entry.serviceId)) +
+                    ' · app <code>' + esc(parsed.appId) + '</code>' +
+                    ' · content <code>' + esc(parsed.contentId) + '</code>' +
+                    ' · type <code>' + esc(parsed.mediaType) + '</code><br>' +
+                    '<span class="ok">Magic link ready:</span> <code>' + esc(res.magicUrl) + '</code>' +
+                    '<div class="row">' +
+                    '<button class="btn small ghost" type="button" data-act="copy">Copy link</button>' +
+                    '<a class="btn small primary" href="' + esc(res.magicUrl) + '" target="_blank" rel="noopener">Open link</a>' +
+                    '</div>' +
+                    '<p class="muted" style="margin-top:0.4rem;">Link expires after 24 hours (client-enforced). ' +
+                    'The recipient opens it on their phone — same Wi-Fi as their TV — to pair and watch. ' +
+                    'Roku launching is experimental and unverified on real hardware.</p>');
+                var copyBtn = box.querySelector('[data-act="copy"]');
+                copyBtn.addEventListener('click', function () { copyText(res.magicUrl, copyBtn); });
+            } catch (e) {
+                showStatus(box, '<span class="err">Could not create the magic link:</span> ' +
+                    esc((e && e.message) || e));
+            }
+        }
+
+        function linkRow(url) {
+            var row = el('div', 'linkrow');
+            var input = el('input');
+            input.type = 'url';
+            input.readOnly = true;
+            input.value = url;
+            input.setAttribute('aria-label', 'Deep link URL');
+            var copy = el('button', 'btn small ghost', 'Copy');
+            copy.type = 'button';
+            copy.addEventListener('click', function () { copyText(url, copy); });
+            row.appendChild(input);
+            row.appendChild(copy);
+            return row;
+        }
+
+        function buildCard(entry, onDelete) {
+            var card = el('div', 'card');
+            var head = el('div', 'card-head');
+            var title = el('h3', null, (entry.builtin ? serviceName(entry.serviceId) : (entry.label || serviceName(entry.serviceId))));
+            head.appendChild(title);
+            var chip = el('span', 'state ' + (entry.builtin ? 'state-' + entry.state : 'state-tester'),
+                entry.builtin ? STATE_NAMES[entry.state] : 'Tester-provided');
+            head.appendChild(chip);
+            card.appendChild(head);
+            card.appendChild(el('div', 'honest-label',
+                entry.builtin ? HONESTY_LABEL : 'tester-provided — not verified on Roku'));
+            if (!entry.builtin && entry.label) {
+                card.appendChild(el('p', 'muted', entry.label));
+            }
+            card.appendChild(linkRow(entry.url));
+            var actions = el('div', 'actions');
+            var testBtn = el('button', 'btn small primary', 'Test share');
+            testBtn.type = 'button';
+            var box = statusEl();
+            testBtn.addEventListener('click', function () { testShare(entry, box); });
+            actions.appendChild(testBtn);
+            if (onDelete) {
+                var del = el('button', 'btn small danger-ghost', 'Delete');
+                del.type = 'button';
+                del.addEventListener('click', onDelete);
+                actions.appendChild(del);
+            }
+            card.appendChild(actions);
+            card.appendChild(box);
+            return card;
+        }
+
+        function renderBuiltin() {
+            var host = document.getElementById('builtin-list');
+            host.innerHTML = '';
+            if (!window.CouchbeamTestHarnessData) {
+                host.appendChild(el('p', 'muted', 'Link library failed to load.'));
+                return;
+            }
+            var cards = window.CouchbeamTestHarnessData.CARDS.slice();
+            cards.sort(function (a, b) {
+                return (STATE_ORDER[a.state] - STATE_ORDER[b.state]) || (a.id < b.id ? -1 : 1);
+            });
+            cards.forEach(function (c) {
+                var url = c.liveUrl || c.fixtureUrl;
+                if (!url) return;
+                host.appendChild(buildCard({
+                    builtin: true,
+                    serviceId: c.id,
+                    state: c.state,
+                    url: url,
+                    note: c.note
+                }));
+            });
+        }
+
+        function renderCustom() {
+            var host = document.getElementById('custom-list');
+            host.innerHTML = '';
+            var list = getCustom();
+            if (!list.length) {
+                host.appendChild(el('p', 'empty', 'No custom links yet — add one above.'));
+                return;
+            }
+            list.forEach(function (entry, i) {
+                host.appendChild(buildCard(entry, function () {
+                    if (!confirm('Delete this link?')) return;
+                    var l = getCustom();
+                    l.splice(i, 1);
+                    saveCustom(l);
+                    renderCustom();
+                }));
+            });
+        }
+
+        function initForm() {
+            var sel = document.getElementById('custom-service');
+            var services = (window.QuickbeamRegistry && window.QuickbeamRegistry.publicServices())
+                ? window.QuickbeamRegistry.publicServices() : [];
+            services.forEach(function (s) {
+                var opt = document.createElement('option');
+                opt.value = s.id;
+                opt.textContent = s.name;
+                sel.appendChild(opt);
+            });
+            document.getElementById('custom-form').addEventListener('submit', function (e) {
+                e.preventDefault();
+                var serviceId = sel.value;
+                var url = document.getElementById('custom-url').value.trim();
+                var label = document.getElementById('custom-label').value.trim();
+                if (!/^https?:\/\//i.test(url)) {
+                    alert('Please enter a valid http(s) deep link URL.');
+                    return;
+                }
+                var list = getCustom();
+                list.push({ builtin: false, serviceId: serviceId, url: url, label: label });
+                saveCustom(list);
+                document.getElementById('custom-url').value = '';
+                document.getElementById('custom-label').value = '';
+                renderCustom();
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            renderBuiltin();
+            renderCustom();
+            initForm();
+        });
+    })();
+    </script>
+</body>
+</html>

@@ -700,7 +700,7 @@
                 <span>Send request</span>
             </button>
             <div id="reqResult" style="font-size: 0.8rem; margin-top: 0.5rem; display: none;"></div>
-            <p style="font-size: 0.7rem; color: var(--text-secondary); margin: 0.6rem 0 0;">Contact info is only used to notify you if this service gets added. See our <a href="/privacy.html" style="color: var(--text-secondary);">Privacy Policy</a>.</p>
+            <p style="font-size: 0.7rem; color: var(--text-secondary); margin: 0.6rem 0 0;">Nothing here is sent or stored by this page — the request is yours to file or copy. See our <a href="/privacy.html" style="color: var(--text-secondary);">Privacy Policy</a>.</p>
         </div>
 
         <label for="videoTitle">Video Title (Optional)</label>
@@ -745,6 +745,10 @@
                 </button>
             </div>
             <div class="copy-hint">Copy this link and text it to your friend.</div>
+            <div class="copy-hint" style="margin-top: 0.5rem;">
+                <span id="linkStatus"></span>
+                <button type="button" onclick="refreshLinkStatus()" style="background:none;border:none;color:var(--primary);font:inherit;font-size:0.75rem;cursor:pointer;text-decoration:underline;padding:0;">Refresh status</button>
+            </div>
         </div>
 
         <div id="roku-status" class="status-badge loading" style="margin-top: 1.5rem; margin-bottom: 0; padding: 0.75rem; font-size: 0.8rem; line-height: 1.3;">
@@ -759,14 +763,24 @@
         <!-- Sender Device Manager Panel -->
         <div id="sender-pairing-panel" class="device-manager" style="display:none; margin-top: 1.25rem;">
             <div class="setup-desc" style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.75rem;">
-                Pair a Roku TV to automatically link generated streams to it.
+                Register a Roku TV to get a pairing link you can share — the recipient opens it on their phone to pair the TV. Nothing here launches video by itself; phone-to-Roku launching is experimental and unverified on real hardware.
             </div>
             
             <div style="border-bottom: 1px solid rgba(16, 24, 40, 0.05); padding-bottom: 0.75rem; margin-bottom: 0.75rem;">
-                <label style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 0.35rem; font-weight: 600; text-transform: uppercase;">Pair with 6-Digit TV Code</label>
-                <div style="display: grid; grid-template-columns: 1fr auto; gap: 0.5rem;">
-                    <input type="text" id="senderPairCode" placeholder="Enter code (e.g. 123456)" style="padding: 0.5rem 0.75rem; font-size: 0.85rem; width: 100%; box-sizing: border-box;">
-                    <button class="btn-primary" onclick="pairWithCode()" style="padding: 0.5rem 1rem; width: auto; font-size: 0.85rem; border-radius: 8px;">Pair</button>
+                <label style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 0.35rem; font-weight: 600; text-transform: uppercase;">Register this TV — get a pairing link</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem;">
+                    <input type="text" id="senderTvName" placeholder="TV name (e.g. Living room)" maxlength="80" style="padding: 0.5rem 0.75rem; font-size: 0.85rem; width: 100%; box-sizing: border-box;">
+                    <input type="text" id="senderTvIp" placeholder="TV LAN IP (e.g. 192.168.1.50)" style="padding: 0.5rem 0.75rem; font-size: 0.85rem; width: 100%; box-sizing: border-box;">
+                </div>
+                <button class="btn-primary" onclick="registerSenderTv()" style="padding: 0.5rem 1rem; width: auto; font-size: 0.85rem; border-radius: 8px;">Create pairing link</button>
+                <div id="senderPairingLinkBox" style="display: none; margin-top: 0.6rem;">
+                    <div class="link-container">
+                        <span class="link-text" id="senderPairingLink"></span>
+                        <button class="copy-btn" type="button" onclick="copySenderPairingLink()">
+                            <span>Copy</span>
+                        </button>
+                    </div>
+                    <div class="copy-hint">Share this link — the recipient opens it on their phone to pair this TV.</div>
                 </div>
             </div>
             
@@ -821,8 +835,20 @@
     <script src="/js/qb.js"></script>
     <script src="/js/send-contacts.js"></script>
     <script>
+        // Storage helpers: localStorage throws in some contexts (private
+        // mode, opaque origins). The page must keep working without it.
+        function safeStorageGet(key) {
+            try { return localStorage.getItem(key); } catch (e) { return null; }
+        }
+        function safeStorageSet(key, value) {
+            try { localStorage.setItem(key, value); } catch (e) {}
+        }
+        function safeStorageRemove(key) {
+            try { localStorage.removeItem(key); } catch (e) {}
+        }
+
         // Load saved sender name on startup
-        document.getElementById('senderName').value = localStorage.getItem('quickbeam_sender_name') || '';
+        document.getElementById('senderName').value = safeStorageGet('quickbeam_sender_name') || '';
 
         // PWA Setup and Share Target Interception
         window.addEventListener('DOMContentLoaded', () => {
@@ -873,7 +899,7 @@
             renderContacts();
 
             // Trigger tutorial modal for first-time users
-            if (!localStorage.getItem('quickbeam_tutorial_seen')) {
+            if (!safeStorageGet('quickbeam_tutorial_seen')) {
                 openModal();
             }
         });
@@ -884,65 +910,82 @@
 
         function closeModal() {
             document.getElementById('tutorial-modal').classList.remove('active');
-            localStorage.setItem('quickbeam_tutorial_seen', 'true');
+            safeStorageSet('quickbeam_tutorial_seen', 'true');
         }
 
-        async function checkStatus() {
-            try {
-                const res = await fetch('/api/status');
-                const data = await res.json();
-                const statusEl = document.getElementById('roku-status');
-                const textEl = statusEl.querySelector('span:not(.ping-indicator)');
-                
-                if (data.active) {
-                    statusEl.className = "status-badge connected";
-                    textEl.innerText = "A Roku TV is active on your network!";
-                } else {
-                    statusEl.className = "status-badge disconnected";
-                    textEl.innerText = "No Roku TV detected on your network. (Your detected public IP: " + data.publicIp + "). Recipient's phone must open the magic link on the same Wi-Fi to register their TV.";
-                }
-            } catch (e) {
-                const statusEl = document.getElementById('roku-status');
-                statusEl.className = "status-badge error";
-                statusEl.querySelector('span:not(.ping-indicator)').innerText = "Unable to check Roku status.";
-            }
+        function checkStatus() {
+            // Static hosting has no backend to ask about the LAN, so this
+            // badge is informational: the sender's page cannot detect a Roku
+            // TV on the network. The recipient pairs their own TV after
+            // opening the magic link.
+            const statusEl = document.getElementById('roku-status');
+            statusEl.className = "status-badge disconnected";
+            statusEl.querySelector('span:not(.ping-indicator)').innerText =
+                "This page can't detect a Roku TV on your network (static hosting, no server). " +
+                "Your recipient opens the magic link on their phone — on the same Wi-Fi as their TV — " +
+                "and pairs the TV themselves. Roku launching is experimental and unverified on real hardware.";
         }
 
         async function generateLink() {
             const senderName = document.getElementById('senderName').value.trim();
             const url = document.getElementById('videoUrl').value.trim();
             const videoTitle = document.getElementById('videoTitle').value.trim();
-            const defaultPairingCode = getSenderDefaultPairingCode();
-            
+
             if (!url) return alert("Please paste a URL");
 
             if (senderName) {
-                localStorage.setItem('quickbeam_sender_name', senderName);
+                safeStorageSet('quickbeam_sender_name', senderName);
             } else {
-                localStorage.removeItem('quickbeam_sender_name');
+                safeStorageRemove('quickbeam_sender_name');
+            }
+
+            // Static hosting has no backend: create the magic link through the
+            // client-side data layer (Quickbeam.createMagicLink writes the
+            // capability doc to Firestore directly).
+            if (typeof window.Quickbeam === 'undefined') {
+                return alert("Couchbeam is still loading — try again in a moment.");
             }
 
             try {
-                const res = await fetch('/api/create', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url, senderName, videoTitle, pairingCode: defaultPairingCode })
-                });
-                
-                const data = await res.json();
-                if (data.relayUrl) {
-                    document.getElementById('result').style.display = 'block';
-                    document.getElementById('outputLink').innerText = data.relayUrl;
-                } else if (data.error === 'URL not supported yet') {
+                const { linkId, magicUrl } = await window.Quickbeam.createMagicLink({ url, videoTitle });
+                window.__lastLinkId = linkId;
+                document.getElementById('result').style.display = 'block';
+                document.getElementById('outputLink').innerText = magicUrl;
+                refreshLinkStatus();
+            } catch (e) {
+                const code = e && e.code;
+                if (code === 'unsupported' || code === 'unparseable') {
                     document.getElementById('service-request-panel').style.display = 'block';
                     document.getElementById('reqServiceName').placeholder = 'Service name (e.g. the site your link was from)';
                     alert('That link isn\'t from a supported service yet. Request it below and we\'ll prioritize it.');
                     document.getElementById('service-request-panel').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                } else if (code === 'invalid-url') {
+                    alert("Please paste a valid video URL.");
                 } else {
-                    alert("Error: " + (data.error || "Unknown error"));
+                    alert("Error: " + ((e && e.message) || "Unknown error"));
+                }
+            }
+        }
+
+        // After a link is created, check its live status through the data
+        // layer (Quickbeam.getMagicLink) — active, expired, or missing.
+        async function refreshLinkStatus() {
+            const el = document.getElementById('linkStatus');
+            const linkId = window.__lastLinkId;
+            if (!el || !linkId || typeof window.Quickbeam === 'undefined') return;
+            el.innerText = 'Checking link status…';
+            try {
+                const doc = await window.Quickbeam.getMagicLink(linkId);
+                if (doc && doc.error) {
+                    el.innerText = 'Link status: ' + doc.error + '.';
+                } else if (doc) {
+                    const exp = doc.expiresAt ? new Date(doc.expiresAt) : null;
+                    el.innerText = 'Link status: active' +
+                        (exp ? ' — expires ' + exp.toLocaleString() : '') +
+                        (doc.serviceName ? ' · ' + doc.serviceName : '') + '.';
                 }
             } catch (e) {
-                alert("Failed to connect to Relay server.");
+                el.innerText = 'Link status: unavailable (' + ((e && e.message) || 'error') + ').';
             }
         }
 
@@ -953,36 +996,63 @@
             panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
         }
 
-        async function submitServiceRequest() {
+        function submitServiceRequest() {
             const service = document.getElementById('reqServiceName').value.trim();
             const contact = document.getElementById('reqContact').value.trim();
             const result = document.getElementById('reqResult');
             result.style.display = 'block';
+            result.innerHTML = '';
             if (service.length < 2) {
-                result.style.color = '#ff8a8a';
+                result.style.color = 'var(--error-text)';
                 result.innerText = 'Please name the service you want added.';
                 return;
             }
-            try {
-                const res = await fetch('/api/service-request', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ service, contact })
-                });
-                const data = await res.json();
-                if (data.status === 'ok') {
-                    result.style.color = '#7dffa8';
-                    result.innerText = `Thanks! "${service}" is on the request list.`;
-                    document.getElementById('reqServiceName').value = '';
-                    document.getElementById('reqContact').value = '';
-                } else {
-                    result.style.color = '#ff8a8a';
-                    result.innerText = 'Error: ' + (data.error || 'Unknown error');
+            // Static hosting has no backend to file requests with: compose
+            // the request so the sender can file it as a GitHub issue or copy
+            // the text elsewhere. Nothing here is uploaded or stored.
+            const title = '[service-request] ' + service.slice(0, 60);
+            const bodyLines = [
+                'Please add support for this streaming service.',
+                '',
+                'Service: ' + service
+            ];
+            if (contact) bodyLines.push('Contact (for an update if it gets added): ' + contact);
+            bodyLines.push('', 'Submitted from the Couchbeam sender page (static hosting — no backend).');
+            const body = bodyLines.join('\n');
+            const issueUrl = 'https://github.com/almost-alden/quickbeam/issues/new?title=' +
+                encodeURIComponent(title) + '&body=' + encodeURIComponent(body);
+
+            result.style.color = 'var(--text-primary)';
+            const note = document.createElement('p');
+            note.style.margin = '0 0 0.5rem';
+            note.style.fontSize = '0.8rem';
+            note.innerText = 'Thanks! Filing the request is up to you — open the pre-filled issue below (nothing is sent until you submit it):';
+            const openBtn = document.createElement('a');
+            openBtn.href = issueUrl;
+            openBtn.target = '_blank';
+            openBtn.rel = 'noopener';
+            openBtn.className = 'btn-primary';
+            openBtn.style.cssText = 'padding:0.6rem;font-size:0.85rem;height:auto;display:block;text-align:center;text-decoration:none;box-sizing:border-box;';
+            openBtn.innerText = 'Open service request';
+            const copyBtn = document.createElement('button');
+            copyBtn.type = 'button';
+            copyBtn.className = 'copy-btn';
+            copyBtn.style.marginTop = '0.5rem';
+            copyBtn.innerText = 'Copy request text';
+            copyBtn.onclick = async () => {
+                try {
+                    await navigator.clipboard.writeText(title + '\n\n' + body);
+                    copyBtn.innerText = 'Copied!';
+                    setTimeout(() => { copyBtn.innerText = 'Copy request text'; }, 2000);
+                } catch (e) {
+                    alert('Copy failed: ' + e);
                 }
-            } catch (e) {
-                result.style.color = '#ff8a8a';
-                result.innerText = 'Failed to connect to Relay server.';
-            }
+            };
+            result.appendChild(note);
+            result.appendChild(openBtn);
+            result.appendChild(copyBtn);
+            document.getElementById('reqServiceName').value = '';
+            document.getElementById('reqContact').value = '';
         }
 
         // Contact Management Logic
@@ -1102,10 +1172,10 @@
             if (!url) return alert("Please paste a Video URL first.");
 
             if (senderName) {
-                localStorage.setItem('quickbeam_sender_name', senderName);
+                safeStorageSet('quickbeam_sender_name', senderName);
             }
 
-            // Static hosting has no /api/*: create the magic link through the
+            // Static hosting has no backend routes: create the magic link through the
             // data layer (Quickbeam.createMagicLink falls back to Firestore).
             if (typeof window.Quickbeam === 'undefined' || typeof window.QuickbeamSendContacts === 'undefined') {
                 return alert("Couchbeam is still loading — try again in a moment.");
@@ -1169,28 +1239,68 @@
         // Default pairing code logic on sender dashboard
         function getSenderManualDevices() {
             try {
-                return JSON.parse(localStorage.getItem('quickbeam_sender_manual_devices')) || [];
+                return JSON.parse(safeStorageGet('quickbeam_sender_manual_devices')) || [];
             } catch (e) {
                 return [];
             }
         }
 
         function saveSenderManualDevices(devices) {
-            localStorage.setItem('quickbeam_sender_manual_devices', JSON.stringify(devices));
+            safeStorageSet('quickbeam_sender_manual_devices', JSON.stringify(devices));
         }
 
-        function getSenderDefaultPairingCode() {
-            return localStorage.getItem('quickbeam_default_pairing_code') || '';
-        }
+        // Register a TV through the client-side data layer and show the
+        // pairing capability link (unguessable 128-bit id). The recipient
+        // opens the link on their phone to pair this TV — there are no
+        // six-digit codes in the static model.
+        async function registerSenderTv() {
+            const nameInput = document.getElementById('senderTvName');
+            const ipInput = document.getElementById('senderTvIp');
+            const deviceName = nameInput.value.trim() || 'Roku TV';
+            const localIp = ipInput.value.trim();
 
-        function saveSenderDefaultPairingCode(code) {
-            if (code) {
-                localStorage.setItem('quickbeam_default_pairing_code', code);
-            } else {
-                localStorage.removeItem('quickbeam_default_pairing_code');
+            const ipPattern = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/;
+            if (!localIp || !ipPattern.test(localIp)) {
+                return alert("Please enter the TV's LAN IP address (e.g. 192.168.1.50).");
+            }
+            if (typeof window.Quickbeam === 'undefined') {
+                return alert("Couchbeam is still loading — try again in a moment.");
+            }
+
+            try {
+                const { deviceId } = await window.Quickbeam.registerDevice({ localIp, deviceName });
+                const pairingLink = window.Quickbeam.pairingLinkFor(deviceId);
+
+                document.getElementById('senderPairingLink').innerText = pairingLink;
+                document.getElementById('senderPairingLinkBox').style.display = 'block';
+
+                // Keep the link on this device so it survives a reload.
+                const devices = getSenderManualDevices();
+                const existing = devices.find(d => d.ip === localIp);
+                if (existing) {
+                    existing.name = deviceName;
+                    existing.pairingLink = pairingLink;
+                } else {
+                    devices.push({ name: deviceName, ip: localIp, pairingLink: pairingLink });
+                }
+                saveSenderManualDevices(devices);
+                nameInput.value = '';
+                ipInput.value = '';
+                renderSenderDevices();
+            } catch (e) {
+                alert((e && e.message) || "Could not register this TV.");
             }
         }
 
+        async function copySenderPairingLink() {
+            const linkText = document.getElementById('senderPairingLink').innerText;
+            try {
+                await navigator.clipboard.writeText(linkText);
+                alert('Pairing link copied — share it with the recipient.');
+            } catch (e) {
+                alert('Copy failed: ' + e);
+            }
+        }
         function toggleSenderPairing(e) {
             if (e) e.preventDefault();
             const panel = document.getElementById('sender-pairing-panel');
@@ -1198,33 +1308,6 @@
             panel.style.display = isHidden ? 'block' : 'none';
             if (isHidden) {
                 renderSenderDevices();
-            }
-        }
-
-        async function pairWithCode() {
-            const codeInput = document.getElementById('senderPairCode');
-            const code = codeInput.value.trim().replace(/\s+/g, '');
-            if (!code || code.length < 5) return alert("Please enter a valid pairing code.");
-
-            try {
-                const res = await fetch(`/api/resolve-code/${code}`);
-                const data = await res.json();
-                if (data.status === 'paired' && data.device) {
-                    const dev = data.device;
-                    const devices = getSenderManualDevices();
-                    if (!devices.some(d => d.ip === dev.localIp)) {
-                        devices.push({ name: dev.deviceName, ip: dev.localIp, code: code });
-                        saveSenderManualDevices(devices);
-                    }
-                    saveSenderDefaultPairingCode(code);
-                    codeInput.value = '';
-                    renderSenderDevices();
-                    alert(`Successfully paired default TV: ${dev.deviceName}!`);
-                } else {
-                    alert("Failed to find TV: Code invalid or expired.");
-                }
-            } catch (e) {
-                alert("Error connecting to server to resolve code.");
             }
         }
 
@@ -1253,37 +1336,35 @@
             if (event) event.stopPropagation();
             if (!confirm("Remove this TV pairing?")) return;
             const devices = getSenderManualDevices();
-            const removed = devices.splice(index, 1)[0];
+            devices.splice(index, 1);
             saveSenderManualDevices(devices);
-            
-            // If the deleted device was the default pairing code, clear it
-            const defaultCode = getSenderDefaultPairingCode();
-            if (removed.code && defaultCode === removed.code) {
-                saveSenderDefaultPairingCode('');
-            }
             renderSenderDevices();
         }
 
         function setSenderActiveDevice(device) {
-            if (device.code) {
-                saveSenderDefaultPairingCode(device.code);
-            } else {
-                saveSenderDefaultPairingCode('');
-            }
             // Temporarily store active IP
-            localStorage.setItem('quickbeam_sender_active_ip', device.ip);
+            safeStorageSet('quickbeam_sender_active_ip', device.ip);
             renderSenderDevices();
+        }
+
+        async function copyDevicePairingLink(pairingLink, event) {
+            if (event) event.stopPropagation();
+            try {
+                await navigator.clipboard.writeText(pairingLink);
+                alert('Pairing link copied — share it with the recipient.');
+            } catch (e) {
+                alert('Copy failed: ' + e);
+            }
         }
 
         function renderSenderDevices() {
             const container = document.getElementById('senderDeviceListContainer');
             container.innerHTML = '';
             const devices = getSenderManualDevices();
-            const defaultCode = getSenderDefaultPairingCode();
-            const activeIp = localStorage.getItem('quickbeam_sender_active_ip');
+            const activeIp = safeStorageGet('quickbeam_sender_active_ip');
 
             devices.forEach((dev, index) => {
-                const isActive = (dev.code && defaultCode === dev.code) || (!dev.code && activeIp === dev.ip);
+                const isActive = activeIp === dev.ip;
                 
                 const item = document.createElement('div');
                 item.className = `device-item ${isActive ? 'active' : ''}`;
@@ -1298,7 +1379,7 @@
 
                 const ipText = document.createElement('div');
                 ipText.className = 'device-item-ip';
-                ipText.innerText = dev.ip + (dev.code ? ` [Code: ${dev.code}]` : '');
+                ipText.innerText = dev.ip + (dev.pairingLink ? ' · pairing link saved' : '');
 
                 info.appendChild(nameText);
                 info.appendChild(ipText);
@@ -1308,6 +1389,16 @@
                 badgeRow.style.display = 'flex';
                 badgeRow.style.alignItems = 'center';
                 badgeRow.style.gap = '0.5rem';
+
+                // Copy pairing link (registered TVs only)
+                if (dev.pairingLink) {
+                    const linkBtn = document.createElement('button');
+                    linkBtn.className = 'switch-btn';
+                    linkBtn.innerText = '🔗 Copy link';
+                    linkBtn.title = 'Copy this TV\'s pairing link';
+                    linkBtn.onclick = (e) => copyDevicePairingLink(dev.pairingLink, e);
+                    badgeRow.appendChild(linkBtn);
+                }
 
                 // Download/Install Button
                 const installBtn = document.createElement('button');
@@ -1363,7 +1454,6 @@
         }
 
         checkStatus();
-        setInterval(checkStatus, 10000);
     </script>
 </body>
 </html>
