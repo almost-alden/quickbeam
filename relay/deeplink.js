@@ -75,5 +75,5 @@ async function scrapeTitle(url) {
     return '';
 }
 
-module.exports = { parseUrl, scrapeTitle };
+module.exports = { parseUrl, scrapeTitle, decodeHtmlEntities };
 
