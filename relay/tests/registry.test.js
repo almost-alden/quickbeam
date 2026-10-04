@@ -1,81 +1,81 @@
 const { registerDevice, getDevicesByPublicIp, findDeviceByPairingCode } = require('../registry');
 
 describe('Device Registry', () => {
-    test('Successful registration and retrieval', async () => {
+    test('Successful registration and retrieval', () => {
         const publicIp = '1.1.1.1';
         const localIp = '192.168.1.100';
-
-        await registerDevice(publicIp, localIp, 'roku-123', 'Living Room Roku', '123456');
-        const devices = await getDevicesByPublicIp(publicIp);
-
+        
+        registerDevice(publicIp, localIp, 'roku-123', 'Living Room Roku', '123456');
+        const devices = getDevicesByPublicIp(publicIp);
+        
         expect(devices.length).toBe(1);
         expect(devices[0].localIp).toBe(localIp);
         expect(devices[0].deviceId).toBe('roku-123');
         expect(devices[0].deviceName).toBe('Living Room Roku');
     });
 
-    test('Resolve device by pairing code', async () => {
+    test('Resolve device by pairing code', () => {
         const publicIp = '4.4.4.4';
         const localIp = '192.168.1.105';
-
-        await registerDevice(publicIp, localIp, 'roku-code-test', 'Kitchen Roku', '888999');
-        const device = await findDeviceByPairingCode('888999');
-
+        
+        registerDevice(publicIp, localIp, 'roku-code-test', 'Kitchen Roku', '888999');
+        const device = findDeviceByPairingCode('888999');
+        
         expect(device).toBeDefined();
         expect(device.localIp).toBe(localIp);
         expect(device.deviceName).toBe('Kitchen Roku');
     });
 
-    test('Multiple devices registered under the same public IP', async () => {
+    test('Multiple devices registered under the same public IP', () => {
         const publicIp = '2.2.2.2';
-        await registerDevice(publicIp, '192.168.1.100', 'roku-1', 'Living Room');
-        await registerDevice(publicIp, '192.168.1.101', 'roku-2', 'Bedroom');
+        registerDevice(publicIp, '192.168.1.100', 'roku-1', 'Living Room');
+        registerDevice(publicIp, '192.168.1.101', 'roku-2', 'Bedroom');
 
-        const devices = await getDevicesByPublicIp(publicIp);
+        const devices = getDevicesByPublicIp(publicIp);
         expect(devices.length).toBe(2);
-
+        
         const names = devices.map(d => d.deviceName);
         expect(names).toContain('Living Room');
         expect(names).toContain('Bedroom');
     });
 
-    test('Non-existent IP returns empty array', async () => {
-        expect(await getDevicesByPublicIp('9.9.9.9')).toEqual([]);
+    test('Non-existent IP returns empty array', () => {
+        expect(getDevicesByPublicIp('9.9.9.9')).toEqual([]);
     });
 
-    test('TTL Expiry via Date.now mocking', async () => {
+    test('TTL Expiry via Date.now mocking', () => {
         const publicIp = '3.3.3.3';
         const realDateNow = Date.now;
-
+        
         Date.now = jest.fn(() => 1000000000000);
-        await registerDevice(publicIp, '10.0.0.5', 'roku-ttl', 'Expired Device');
-
+        registerDevice(publicIp, '10.0.0.5', 'roku-ttl', 'Expired Device');
+        
         // Verify registered
-        expect((await getDevicesByPublicIp(publicIp)).length).toBe(1);
+        expect(getDevicesByPublicIp(publicIp).length).toBe(1);
 
         // Move time forward by 61 minutes
         Date.now = jest.fn(() => 1000000000000 + (1000 * 60 * 61));
-        expect((await getDevicesByPublicIp(publicIp)).length).toBe(0);
+        expect(getDevicesByPublicIp(publicIp).length).toBe(0);
 
         // Restore real Date.now
         Date.now = realDateNow;
     });
 
-    test('TTL Expiry via Date.now mocking for pairing code', async () => {
+    test('TTL Expiry via Date.now mocking for pairing code', () => {
         const publicIp = '5.5.5.5';
         const realDateNow = Date.now;
         const code = '112233';
 
         Date.now = jest.fn(() => 1000000000000);
-        await registerDevice(publicIp, '10.0.0.6', 'roku-ttl-pairing', 'Expired Pairing Device', code);
+        registerDevice(publicIp, '10.0.0.6', 'roku-ttl-pairing', 'Expired Pairing Device', code);
 
         // Verify registered
-        expect(await findDeviceByPairingCode(code)).toBeDefined();
-        expect(await findDeviceByPairingCode(code)).not.toBeNull();
+        expect(findDeviceByPairingCode(code)).toBeDefined();
+        expect(findDeviceByPairingCode(code)).not.toBeNull();
 
         // Move time forward by 61 minutes
         Date.now = jest.fn(() => 1000000000000 + (1000 * 60 * 61));
-        expect(await findDeviceByPairingCode(code)).toBeNull();
+        expect(findDeviceByPairingCode(code)).toBeNull();
 
         // Restore real Date.now
         Date.now = realDateNow;
