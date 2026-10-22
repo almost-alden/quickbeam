@@ -4,12 +4,17 @@ const crypto = require('crypto');
 const { registerDevice, getDevicesByPublicIp, findDeviceByPairingCode } = require('./registry');
 const { createStore } = require('./store');
 const { parseUrl, scrapeTitle } = require('./deeplink');
-const { getServiceByAppId, publicServices } = require('./services');
+const { getServiceByAppId, publicServices, SERVICES } = require('./services');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname + '/public'));
+// Marketing site (website/) served at /site; its signup form POSTs to /api/interest.
+app.use('/site', express.static(path.join(__dirname, '..', 'website')));
 
 // Shared state store (magic links, devices, pairing codes). Defaults to the
 // in-memory adapter; set QB_STORE=firestore on Cloud Run. See ./store/.
@@ -83,9 +88,6 @@ app.get('/api/services', (req, res) => {
 // land in git). Override with the SERVICE_REQUEST_FILE env var.
 // NOTE (Cloud Run): the container filesystem is ephemeral per instance —
 // same go-live consideration as the pilot-signup store.
-const fs = require('fs');
-const os = require('os');
-const path = require('path');
 const SERVICE_REQUEST_FILE = process.env.SERVICE_REQUEST_FILE ||
     path.join(os.homedir(), '.quickbeam', 'service-requests.jsonl');
 const serviceRequestHits = new Map(); // ip -> [timestamps]
@@ -201,6 +203,83 @@ app.post('/api/support', (req, res) => {
     res.json({ status: 'ok', message: 'Your support ticket has been received.' });
 });
 
+// Early-access interest signup (marketing site form).
+// Stores signups as JSON lines OUTSIDE the repo directory (PII must never
+// land in git, even by accident: a gitignored file inside the repo is one
+// `git add -f` or packaging slip away from committed contact details).
+// Override with the INTEREST_FILE env var; default is ~/.quickbeam/interest.jsonl.
+// NOTE (Cloud Run): the container filesystem is ephemeral per instance. If
+// signups must survive instance recycling, point INTEREST_FILE at persistent
+// storage or forward records elsewhere before going live.
+const INTEREST_FILE = process.env.INTEREST_FILE ||
+    path.join(os.homedir(), '.quickbeam', 'interest.jsonl');
+const KNOWN_SERVICE_IDS = new Set(SERVICES.map((s) => s.id));
+const interestHits = new Map(); // ip -> [timestamps]
+
+function interestRateLimited(ip) {
+    const now = Date.now();
+    const windowStart = now - 60 * 60 * 1000;
+    const hits = (interestHits.get(ip) || []).filter((t) => t > windowStart);
+    hits.push(now);
+    interestHits.set(ip, hits);
+    return hits.length > 10;
+}
+
+app.post('/api/interest', (req, res) => {
+    const ip = getClientIp(req);
+    if (interestRateLimited(ip)) {
+        return res.status(429).json({ error: 'Too many signups from this address. Please try again later.' });
+    }
+
+    const { phone, email, zip, channels } = req.body || {};
+    const cleanPhone = String(phone || '').replace(/\D/g, '');
+    const cleanEmail = String(email || '').trim().toLowerCase();
+    const cleanZip = String(zip || '').trim();
+    const cleanChannels = [...new Set(Array.isArray(channels) ? channels.map(String) : [])];
+
+    if (!cleanPhone && !cleanEmail) {
+        return res.status(400).json({ error: 'A phone number or email address is required.' });
+    }
+    if (cleanPhone && (cleanPhone.length < 7 || cleanPhone.length > 15)) {
+        return res.status(400).json({ error: 'Please enter a valid phone number.' });
+    }
+    if (cleanEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+        return res.status(400).json({ error: 'Please enter a valid email address.' });
+    }
+    if (!/^\d{5}(-\d{4})?$/.test(cleanZip)) {
+        return res.status(400).json({ error: 'Please enter a valid 5-digit ZIP code.' });
+    }
+    if (cleanChannels.length < 1 || cleanChannels.length > 5) {
+        return res.status(400).json({ error: 'Pick between 1 and 5 services.' });
+    }
+    if (!cleanChannels.every((c) => KNOWN_SERVICE_IDS.has(c))) {
+        return res.status(400).json({ error: 'One or more selected services is not recognized.' });
+    }
+
+    const record = {
+        ts: new Date().toISOString(),
+        ...(cleanPhone ? { phone: cleanPhone } : {}),
+        ...(cleanEmail ? { email: cleanEmail } : {}),
+        zip: cleanZip,
+        channels: cleanChannels,
+    };
+    try {
+        fs.mkdirSync(path.dirname(INTEREST_FILE), { recursive: true });
+        fs.appendFileSync(INTEREST_FILE, JSON.stringify(record) + '\n');
+    } catch (e) {
+        return res.status(500).json({ error: 'Could not save your signup. Please try again.' });
+    }
+
+    // Log the event without contact details (PII stays in the data file only).
+    console.log(JSON.stringify({
+        event: 'INTEREST_SIGNUP',
+        zip: cleanZip,
+        channelCount: cleanChannels.length,
+        channels: cleanChannels,
+    }));
+    res.json({ status: 'ok' });
+});
+
 // Periodically clean up expired store records every hour.
 // (For the Firestore adapter this is a no-op: TTL is enforced on read and
 // a Firestore TTL policy reclaims documents server-side.)
@@ -208,6 +287,7 @@ const cleanupStoreInterval = setInterval(() => {
     store.cleanupExpired().catch((e) => {
         console.error('[Relay] store cleanup failed:', e && e.message);
     });
+
 }, 60 * 60 * 1000);
 
 if (typeof cleanupStoreInterval.unref === 'function') {
@@ -223,3 +303,4 @@ if (require.main === module) {
 
 module.exports = app;
 module.exports.serviceRequestFilePath = SERVICE_REQUEST_FILE;
+module.exports.interestFilePath = INTEREST_FILE;
