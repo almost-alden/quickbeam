@@ -1,4 +1,4 @@
-const { parseUrl } = require('../deeplink');
+const { parseUrl, decodeHtmlEntities } = require('../deeplink');
 
 describe('Deep Link Engine', () => {
     test('YouTube (Standard)', () => {
@@ -223,5 +223,33 @@ describe('ECP Launch Path', () => {
 
     test('Unsupported URL yields no launch target', () => {
         expect(parseUrl('https://google.com')).toBeNull();
+    });
+});
+
+describe('decodeHtmlEntities', () => {
+    test('handles empty or null input', () => {
+        expect(decodeHtmlEntities('')).toBe('');
+        expect(decodeHtmlEntities(null)).toBe('');
+        expect(decodeHtmlEntities(undefined)).toBe('');
+    });
+
+    test('decodes specific HTML entities', () => {
+        expect(decodeHtmlEntities('&amp;')).toBe('&');
+        expect(decodeHtmlEntities('&lt;')).toBe('<');
+        expect(decodeHtmlEntities('&gt;')).toBe('>');
+        expect(decodeHtmlEntities('&quot;')).toBe('"');
+        expect(decodeHtmlEntities('&#39;')).toBe("'");
+        expect(decodeHtmlEntities('&apos;')).toBe("'");
+        expect(decodeHtmlEntities('&#x2F;')).toBe('/');
+    });
+
+    test('decodes multiple entities in a string', () => {
+        expect(decodeHtmlEntities('Hello &amp; welcome to &lt;world&gt;')).toBe('Hello & welcome to <world>');
+        expect(decodeHtmlEntities('&quot;quoted&#39;and&apos;slashed&#x2F;&quot;')).toBe('"quoted\'and\'slashed/"');
+    });
+
+    test('leaves normal strings unchanged', () => {
+        expect(decodeHtmlEntities('Normal string with no entities')).toBe('Normal string with no entities');
+        expect(decodeHtmlEntities('1234567890')).toBe('1234567890');
     });
 });
